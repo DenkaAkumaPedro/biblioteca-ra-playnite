@@ -1,0 +1,16 @@
+# Build
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Artefatos de empacotamento
+*.pext
+
+# Logs
+*.log
+
+# Dados locais / segredos
+ExtensionsData/
+*.api.key
