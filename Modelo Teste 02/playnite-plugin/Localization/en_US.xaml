@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="LOCBibliotecaRAApiKeyLabel">Web API Key:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAApiKeyHelp">Get your key at retroachievements.org → Control Panel → Keys. The key is stored only in your local settings and is never included in code.</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAUsernameLabel">RetroAchievements username:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAUsernameHelp">Your username on the site (not the key). Only games from your account are imported.</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAFoldersLabel">ROM folders to scan:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAAddFolder">Add folder</sys:String>
+    <sys:String x:Key="LOCBibliotecaRARemoveFolder">Remove folder</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAExtensionsLabel">File extensions to check:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAExtensionsTooltip">Comma-separated list, with or without leading dot. Leave empty to check every file.</sys:String>
+    <sys:String x:Key="LOCBibliotecaRADetectLabel">Detect installed ROMs by MD5 hash</sys:String>
+    <sys:String x:Key="LOCBibliotecaRACacheLabel">Cache lifetime:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRACacheUnit">hours (re-downloaded after this period)</sys:String>
+    <sys:String x:Key="LOCBibliotecaRATestButton">Test connection</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAForceButton">Force library update</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAClearButton">Clear cache</sys:String>
+
+</ResourceDictionary>

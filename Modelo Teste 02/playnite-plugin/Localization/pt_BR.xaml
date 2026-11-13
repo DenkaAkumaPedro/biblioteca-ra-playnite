@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="LOCBibliotecaRAApiKeyLabel">Web API Key:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAApiKeyHelp">Pegue sua chave em retroachievements.org → Control Panel → Keys. A chave fica só nas configurações locais e nunca entra no código.</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAUsernameLabel">Usuário do RetroAchievements:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAUsernameHelp">Seu nome de usuário no site (não é a chave). Importa só os jogos da sua conta.</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAFoldersLabel">Pastas de ROM para varrer:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAAddFolder">Adicionar pasta</sys:String>
+    <sys:String x:Key="LOCBibliotecaRARemoveFolder">Remover pasta</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAExtensionsLabel">Extensões de arquivo a verificar:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAExtensionsTooltip">Lista separada por vírgulas, com ou sem ponto. Deixe vazio para verificar todos os arquivos.</sys:String>
+    <sys:String x:Key="LOCBibliotecaRADetectLabel">Detectar ROMs instaladas por hash MD5</sys:String>
+    <sys:String x:Key="LOCBibliotecaRACacheLabel">Validade do cache:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRACacheUnit">horas (baixado de novo após esse período)</sys:String>
+    <sys:String x:Key="LOCBibliotecaRATestButton">Testar conexão</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAForceButton">Forçar atualização da biblioteca</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAClearButton">Limpar cache</sys:String>
+
+</ResourceDictionary>

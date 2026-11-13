@@ -1,0 +1,83 @@
+﻿<UserControl x:Class="BibliotecaRA.BibliotecaRASettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="540" d:DesignWidth="620">
+    <StackPanel Margin="15">
+
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAApiKeyLabel}"
+                   FontWeight="Bold"/>
+        <TextBox Text="{Binding Settings.ApiKey, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAApiKeyHelp}"
+                   TextWrapping="Wrap"
+                   Foreground="Gray"
+                   Margin="0,4,0,12"/>
+
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAUsernameLabel}"
+                   FontWeight="Bold"/>
+        <TextBox Text="{Binding Settings.Username, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAUsernameHelp}"
+                   TextWrapping="Wrap"
+                   Foreground="Gray"
+                   Margin="0,4,0,12"/>
+
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAFoldersLabel}"
+                   FontWeight="Bold"/>
+        <ListBox x:Name="FoldersList"
+                 ItemsSource="{Binding Folders}"
+                 Height="110"/>
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,12">
+            <Button Content="{DynamicResource LOCBibliotecaRAAddFolder}"
+                    Click="AddFolder_Click"
+                    MinWidth="120"/>
+            <Button Content="{DynamicResource LOCBibliotecaRARemoveFolder}"
+                    Click="RemoveFolder_Click"
+                    MinWidth="120"
+                    Margin="8,0,0,0"/>
+        </StackPanel>
+
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAExtensionsLabel}"
+                   FontWeight="Bold"/>
+        <TextBox Text="{Binding Settings.RomExtensions, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAExtensionsTooltip}"
+                   TextWrapping="Wrap"
+                   Foreground="Gray"
+                   Margin="0,4,0,8"/>
+
+        <CheckBox Content="{DynamicResource LOCBibliotecaRADetectLabel}"
+                  IsChecked="{Binding Settings.DetectInstalled}"/>
+
+        <TextBlock Text="{DynamicResource LOCBibliotecaRACacheLabel}"
+                   FontWeight="Bold"
+                   Margin="0,12,0,4"/>
+        <StackPanel Orientation="Horizontal">
+            <TextBox Text="{Binding Settings.CacheTtlHours, UpdateSourceTrigger=LostFocus}"
+                     Width="70"/>
+            <TextBlock Text="{DynamicResource LOCBibliotecaRACacheUnit}"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+            <Button Content="{DynamicResource LOCBibliotecaRATestButton}"
+                    Click="Test_Click"
+                    MinWidth="140"/>
+            <Button Content="{DynamicResource LOCBibliotecaRAForceButton}"
+                    Click="Force_Click"
+                    MinWidth="190"
+                    Margin="8,0,0,0"/>
+            <Button Content="{DynamicResource LOCBibliotecaRAClearButton}"
+                    Click="Clear_Click"
+                    MinWidth="140"
+                    Margin="8,0,0,0"/>
+        </StackPanel>
+
+        <TextBlock Text="{Binding StatusText}"
+                   TextWrapping="Wrap"
+                   Margin="0,14,0,0"
+                   Foreground="Gray"/>
+
+    </StackPanel>
+</UserControl>
