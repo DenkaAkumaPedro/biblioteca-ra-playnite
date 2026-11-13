@@ -1,0 +1,11 @@
+AddonId: BibliotecaRA_46ec2715-329d-4e68-98ca-a35b7259cc5a
+Packages:
+    - Version: 0.0.1
+      PackageUrl: https://github.com/DenkaAkumaPedro/biblioteca-ra-playnite/releases/download/v0.0.1/BibliotecaRA_0_0_1.pext
+      RequiredApiVersion: 6.17.0
+      ReleaseDate: 2026-11-12
+      Changelog:
+          - Versão de teste inicial.
+          - Importa o catálogo do RetroAchievements como jogos não instalados.
+          - Detecta ROMs instaladas por hash MD5 e adiciona GameAction de execução.
+          - Configurações com Web API Key, pastas de ROM, cache e teste de conexão.

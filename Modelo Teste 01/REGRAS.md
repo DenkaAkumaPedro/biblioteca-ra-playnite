@@ -87,8 +87,13 @@ não por permissão. **Nada** de escrita lá.
 - Instalar ou mexer no Playnite fora do fluxo normal (`.pext`)
 
 ### Git
-- `git commit`, `git push`, `git tag` — **só com pedido explícito**
-- Reescrever histórico, forçar push, mexer em branch
+- `git commit` e `git push` **automáticos autorizados**: sempre que houver
+  mudanças nesta pasta do projeto, commitar e enviar ao GitHub (pedido
+  explícito do usuário, vale até que ele peça o contrário)
+- `git tag` e `gh release` — a pedido do usuário (publicação de versão)
+- Reescrever histórico, forçar push, mexer em branch — proibido
+- Repositório: `github.com/DenkaAkumaPedro/biblioteca-ra-playnite` — é a
+  única escrita permitida fora da pasta do projeto
 
 ### Segurança e segredo
 - **Nunca** escrever a Web API Key do RetroAchievements em nenhum arquivo, nem

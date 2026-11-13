@@ -205,7 +205,7 @@ Então:
 |----------|----------------------|-------|
 | `ID` | `GameId` | **Obrigatório.** String do ID numérico. É a chave de reconciliação — não pode mudar entre versões |
 | `Title` | `Name` | |
-| `ConsoleName` | `Platforms` | Criar `MetadataProperty` se não existir. Atenção: RA usa nomes próprios ("Mega Drive", não "Sega Genesis") — precisa de tabela de tradução |
+| `ConsoleName` | `Platforms` | Criar `MetadataProperty` se não existir. **Decisão v0.0.1:** usar o nome do RA como está (ex.: "Mega Drive") — o Playnite não tem lista canônica de plataformas, então qualquer tabela de tradução seria chute; o usuário renomeia no Playnite se quiser |
 | `ImageIcon` | `Icon` | Prefixar URL base |
 | `ImageBoxArt` (só em `GetGame.php`) | `CoverImage` | Só no passo de metadados detalhados |
 | `Genre` | `Genres` | Frequentemente vazio no RA |
@@ -232,30 +232,43 @@ Então:
 
 ## 6. Estrutura de pastas
 
+A raiz do projeto é também a raiz do repositório git
+(`github.com/DenkaAkumaPedro/biblioteca-ra-playnite`). O addon da versão de
+teste fica todo dentro de `Modelo Teste 01\`:
+
 ```
 Biblioteca RA no Playnite\
-├── PLANO.md                  este arquivo
-├── REGRAS.md                 regras de operação e escopo
-├── README.md                 instalar / usar / desenvolver
-├── extension.yaml            (copia para conferência; o de verdade sai do build)
-└── playnite-plugin\
-    ├── BibliotecaRA.csproj
-    ├── BibliotecaRA.sln
-    ├── extension.yaml        manifest — Type: GameLibrary
-    ├── icon.png
-    ├── BibliotecaRA.cs       a LibraryPlugin
-    ├── BibliotecaRA_SettingsView.cs
-    ├── BibliotecaRA_SettingsView.xaml
-    ├── Models\
-    │   ├── RaApiModels.cs    deserialização das respostas do RA
-    │   └── RaSettings.cs     settings do addon
-    ├── Services\
-    │   ├── ApiClient.cs      HttpClient, API key, retry, rate limit
-    │   ├── CatalogService.cs GetGameList/GetConsoleIDs + cache em disco
-    │   └── HashService.cs    MD5 + varredura de pastas
-    └── Localization\
-        ├── pt_BR.xaml
-        └── en_US.xaml
+├── PLANO.md                  este arquivo (cópia em Modelo Teste 01)
+├── REGRAS.md                 regras de operação e escopo (cópia em Modelo Teste 01)
+├── README.md                 instalar / usar / desenvolver (exibido no GitHub)
+├── .gitignore
+├── addon.yaml                manifest do addon browser (verify addon usa este)
+├── manifests\
+│   └── installer.yaml        manifesto de instalação → aponta para a release
+├── .github\workflows\
+│   └── build.yml             CI: build a cada push
+└── Modelo Teste 01\
+    ├── PLANO.md, REGRAS.md   cópias sincronizadas
+    ├── extension.yaml        cópia para conferência; o de verdade sai do build
+    ├── BibliotecaRA_*.pext   pacote gerado (gitignored)
+    └── playnite-plugin\
+        ├── BibliotecaRA.csproj
+        ├── BibliotecaRA.slnx
+        ├── extension.yaml        manifest — Type: GameLibrary
+        ├── icon.png
+        ├── BibliotecaRA.cs       a LibraryPlugin
+        ├── BibliotecaRASettings.cs
+        ├── BibliotecaRA_SettingsView.cs/.xaml
+        ├── Models\
+        │   ├── RaApiModels.cs    deserialização das respostas do RA
+        │   └── RaSettings.cs     settings do addon
+        ├── Services\
+        │   ├── ApiClient.cs      HttpClient, API key, retry, rate limit
+        │   ├── CatalogService.cs GetGameList/GetConsoleIDs + cache em disco
+        │   └── HashService.cs    MD5 + varredura de pastas
+        └── Localization\
+            ├── pt_BR.xaml
+            └── en_US.xaml
 ```
 
 Fora do que entra no `.pext`, na raiz do projeto:
@@ -318,9 +331,13 @@ resolve para `%AppData%\Playnite\ExtensionsData\<PluginId>\`
 - Só se o usuário ativar; padrão é desligado
 
 ### Fase 7 — Empacotar e testar
-- `Toolbox.exe pack "<bin\Release>" "<destino>"` → `BibliotecaRA_1_0_0.pext`
-- `Toolbox.exe verify addon extension.yaml`
-- Instalar de verdade e rodar o ciclo completo
+- `Toolbox.exe pack "<bin\Release>" "<destino>"` → `BibliotecaRA_*_0_0_1.pext`
+  (o Toolbox exclui `Playnite.SDK.dll` e `Newtonsoft.Json.dll` do pacote
+  automaticamente — o host fornece ambos)
+- `Toolbox.exe verify addon addon.yaml` — atenção: o `verify addon` valida o
+  **manifest do addon browser** (`addon.yaml`), não o `extension.yaml`
+- Publicar a `.pext` como release no GitHub (ver seção 10)
+- Instalação no Playnite fica para o usuário (fora do escopo de escrita)
 
 ### Fora do caminho crítico
 
@@ -359,3 +376,29 @@ Para depurar: *Debug → Attach to Process* em `Playnite.DesktopApp.exe`.
 - Doc da API do RA — <https://api-docs.retroachievements.org/>
 - Referência de implementação (Steam Library) — <https://github.com/JosefNemec/PlayniteExtensions/tree/master/source/Libraries/SteamLibrary>
 - Versão atual do Playnite (10.62, 29/09/2026) — <https://codeberg.org/Playnite/Playnite/releases>
+
+---
+
+## 10. Publicação e versionamento
+
+- **Repositório:** <https://github.com/DenkaAkumaPedro/biblioteca-ra-playnite>
+  (público). Raiz do git = raiz deste projeto.
+- **Versionamento:** começa em **0.0.1** (versão de teste). Durante a fase
+  de teste o formato é `0.0.x`; a partir de 0.1.0 quando sair do rótulo de
+  teste. Número sobe a cada release publicada.
+- **Push automático:** sempre que houver mudanças na pasta do projeto, elas
+  são commitadas e enviadas ao GitHub — autorização permanente do usuário
+  até que ele peça o contrário. Histórico nunca é reescrito.
+- **CI:** `.github/workflows/build.yml` roda `dotnet build -c Release` em
+  `windows-latest` a cada push (e em pull requests).
+- **Release:** cada versão vira uma GitHub Release com a `.pext` anexada e
+  os manifestos atualizados:
+  1. bump da `Version` no `extension.yaml`
+  2. novo pacote em `manifests/installer.yaml` (Version, PackageUrl da
+     release, RequiredApiVersion, ReleaseDate, Changelog)
+  3. `Toolbox.exe pack` → anexar na release → `gh release create`
+  4. `Toolbox.exe verify addon addon.yaml` (valida manifest + manifesto de
+     instalação via URL)
+- **Escopo de escrita:** o git/gh é a única escrita autorizada fora da
+  pasta do projeto (REGRAS §4/§5). Instalar o `.pext` no Playnite continua
+  sendo coisa do usuário.
