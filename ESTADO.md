@@ -8,8 +8,11 @@ Atualizado em: 13/11/2026
 
 ## Situação
 
-- **Versão 0.0.1 publicada e em teste** — correções em andamento a partir dos
-  erros anotados em `Notas.md`
+- **Versão 0.0.1 publicada e em teste** — correções do `Notas.md`
+  aplicadas no **Modelo Teste 02**
+- **`.pext` do Modelo Teste 02 gerado** em
+  `Modelo Teste 02\BibliotecaRA_46ec2715-329d-4e68-98ca-a35b7259cc5a_0_0_1.pext`
+  — usuário vai instalar no Playnite e testar
 - **`Modelo Teste 02` é a versão ativa de desenvolvimento** (cópia do 01 com
   as correções); `Modelo Teste 01` continua congelado como referência
 - Repo `biblioteca-ra-playnite` no GitHub: push automático ativo
@@ -50,7 +53,8 @@ O usuário pediu para lembrar — não implementar ainda:
 
 ## Próximo passo
 
-- Usuário testar a versão do `Modelo Teste 02` (empacotar `.pext` se
-  quiser instalar no Playnite).
+- Usuário instalar o `.pext` do Modelo Teste 02 no Playnite
+  (**Configurações → Add-ons → Instalar do arquivo**) e testar:
+  preencher *Usuário do RetroAchievements*, atualizar biblioteca.
 - Na volta: aplicar as melhorias adiadas e novos bugs relatados.
 - Antes de qualquer edição: ler este arquivo, o PLANO e as REGRAS.
