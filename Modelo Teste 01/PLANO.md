@@ -257,8 +257,8 @@ Biblioteca RA no Playnite\
         ├── extension.yaml        manifest — Type: GameLibrary
         ├── icon.png
         ├── BibliotecaRA.cs       a LibraryPlugin
-        ├── BibliotecaRASettings.cs
-        ├── BibliotecaRA_SettingsView.cs/.xaml
+        ├── BibliotecaRASettings.cs           settings (modelo em Models/RaSettings.cs)
+        ├── BibliotecaRASettingsView.xaml/.cs view das configurações
         ├── Models\
         │   ├── RaApiModels.cs    deserialização das respostas do RA
         │   └── RaSettings.cs     settings do addon
