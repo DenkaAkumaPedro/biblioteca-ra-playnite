@@ -1,34 +1,23 @@
-﻿using Playnite.SDK;
-using Playnite.SDK.Data;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
+using BibliotecaRA.Models;
+using Playnite.SDK;
+using Playnite.SDK.Data;
 
 namespace BibliotecaRA
 {
-    public class BibliotecaRASettings : ObservableObject
-    {
-        private string option1 = string.Empty;
-        private bool option2 = false;
-        private bool optionThatWontBeSaved = false;
-
-        public string Option1 { get => option1; set => SetValue(ref option1, value); }
-        public bool Option2 { get => option2; set => SetValue(ref option2, value); }
-        // Playnite serializes settings object to a JSON object and saves it as text file.
-        // If you want to exclude some property from being saved then use `JsonDontSerialize` ignore attribute.
-        [DontSerialize]
-        public bool OptionThatWontBeSaved { get => optionThatWontBeSaved; set => SetValue(ref optionThatWontBeSaved, value); }
-    }
-
     public class BibliotecaRASettingsViewModel : ObservableObject, ISettings
     {
         private readonly BibliotecaRA plugin;
-        private BibliotecaRASettings editingClone { get; set; }
+        private RaSettings editingClone;
+        private RaSettings settings;
+        private string statusText = string.Empty;
+        private bool busy;
 
-        private BibliotecaRASettings settings;
-        public BibliotecaRASettings Settings
+        public RaSettings Settings
         {
             get => settings;
             set
@@ -38,52 +27,168 @@ namespace BibliotecaRA
             }
         }
 
+        public ObservableCollection<string> Folders { get; } = new ObservableCollection<string>();
+
+        public string StatusText
+        {
+            get => statusText;
+            set => SetValue(ref statusText, value);
+        }
+
+        public bool Busy
+        {
+            get => busy;
+            set => SetValue(ref busy, value);
+        }
+
         public BibliotecaRASettingsViewModel(BibliotecaRA plugin)
         {
-            // Injecting your plugin instance is required for Save/Load method because Playnite saves data to a location based on what plugin requested the operation.
             this.plugin = plugin;
-
-            // Load saved settings.
-            var savedSettings = plugin.LoadPluginSettings<BibliotecaRASettings>();
-
-            // LoadPluginSettings returns null if no saved data is available.
-            if (savedSettings != null)
-            {
-                Settings = savedSettings;
-            }
-            else
-            {
-                Settings = new BibliotecaRASettings();
-            }
+            var saved = plugin.LoadPluginSettings<RaSettings>();
+            settings = saved ?? new RaSettings();
+            SyncFolders();
         }
 
         public void BeginEdit()
         {
-            // Code executed when settings view is opened and user starts editing values.
             editingClone = Serialization.GetClone(Settings);
         }
 
         public void CancelEdit()
         {
-            // Code executed when user decides to cancel any changes made since BeginEdit was called.
-            // This method should revert any changes made to Option1 and Option2.
             Settings = editingClone;
+            SyncFolders();
         }
 
         public void EndEdit()
         {
-            // Code executed when user decides to confirm changes made since BeginEdit was called.
-            // This method should save settings made to Option1 and Option2.
+            Settings.RomFolders = Folders.ToList();
             plugin.SavePluginSettings(Settings);
         }
 
         public bool VerifySettings(out List<string> errors)
         {
-            // Code execute when user decides to confirm changes made since BeginEdit was called.
-            // Executed before EndEdit is called and EndEdit is not called if false is returned.
-            // List of errors is presented to user if verification fails.
             errors = new List<string>();
-            return true;
+
+            if (!string.IsNullOrWhiteSpace(Settings.ApiKey) &&
+                Settings.ApiKey.Trim().Length < 16)
+            {
+                errors.Add("A Web API Key parece inválida (muito curta).");
+            }
+
+            if (Settings.CacheTtlHours <= 0)
+            {
+                errors.Add("O TTL do cache deve ser maior que zero.");
+            }
+
+            foreach (var folder in Folders)
+            {
+                if (!System.IO.Directory.Exists(folder))
+                {
+                    errors.Add("A pasta de ROM não existe: " + folder);
+                }
+            }
+
+            return errors.Count == 0;
+        }
+
+        public void AddFolder()
+        {
+            var folder = plugin.PlayniteApi.Dialogs.SelectFolder();
+            if (!string.IsNullOrWhiteSpace(folder) && !Folders.Contains(folder))
+            {
+                Folders.Add(folder);
+            }
+        }
+
+        public void RemoveFolder(string folder)
+        {
+            if (!string.IsNullOrWhiteSpace(folder))
+            {
+                Folders.Remove(folder);
+            }
+        }
+
+        public async void TestConnection()
+        {
+            if (Busy)
+            {
+                return;
+            }
+
+            Busy = true;
+            StatusText = "Testando conexão com o RetroAchievements...";
+            try
+            {
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45)))
+                {
+                    await plugin.TestConnectionAsync(cts.Token);
+                }
+
+                StatusText = "Conexão OK — a Web API Key funciona.";
+            }
+            catch (Exception e)
+            {
+                StatusText = "Falha no teste: " + e.Message;
+            }
+            finally
+            {
+                Busy = false;
+            }
+        }
+
+        public async void ForceCatalogUpdate()
+        {
+            if (Busy)
+            {
+                return;
+            }
+
+            Busy = true;
+            StatusText = "Baixando o catálogo do RetroAchievements...";
+            try
+            {
+                using (var cts = new CancellationTokenSource(TimeSpan.FromMinutes(30)))
+                {
+                    var cache = await plugin.RefreshCatalogAsync(
+                        message => StatusText = message, cts.Token);
+                    var gameCount = cache.GamesByConsole.Values.Sum(list => list.Count);
+                    StatusText = "Catálogo atualizado: " + gameCount + " jogos em " +
+                                 cache.GamesByConsole.Count + " sistemas.";
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                StatusText = "Atualização cancelada.";
+            }
+            catch (Exception e)
+            {
+                StatusText = "Falha na atualização: " + e.Message;
+            }
+            finally
+            {
+                Busy = false;
+            }
+        }
+
+        public void ClearCache()
+        {
+            plugin.ClearCache();
+            StatusText = "Cache do catálogo limpo.";
+        }
+
+        private void SyncFolders()
+        {
+            Folders.Clear();
+            if (Settings?.RomFolders == null)
+            {
+                return;
+            }
+
+            foreach (var folder in Settings.RomFolders)
+            {
+                Folders.Add(folder);
+            }
         }
     }
 }

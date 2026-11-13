@@ -1,17 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace BibliotecaRA
 {
@@ -20,6 +8,34 @@ namespace BibliotecaRA
         public BibliotecaRASettingsView()
         {
             InitializeComponent();
+        }
+
+        private BibliotecaRASettingsViewModel ViewModel => DataContext as BibliotecaRASettingsViewModel;
+
+        private void AddFolder_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel?.AddFolder();
+        }
+
+        private void RemoveFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = FoldersList.SelectedItem as string;
+            ViewModel?.RemoveFolder(selected);
+        }
+
+        private void Test_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel?.TestConnection();
+        }
+
+        private void Force_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel?.ForceCatalogUpdate();
+        }
+
+        private void Clear_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel?.ClearCache();
         }
     }
 }
