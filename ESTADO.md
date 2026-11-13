@@ -10,8 +10,8 @@ Atualizado em: 13/11/2026
 
 - **Versão 0.0.1 publicada e em teste** — correções do `Notas.md`
   aplicadas no **Modelo Teste 02**
-- **`.pext` do Modelo Teste 02 gerado** em
-  `Modelo Teste 02\BibliotecaRA_46ec2715-329d-4e68-98ca-a35b7259cc5a_0_0_1.pext`
+- **`.pext` do Modelo Teste 02 (v0.0.2) gerado** em
+  `Modelo Teste 02\BibliotecaRA_46ec2715-329d-4e68-98ca-a35b7259cc5a_0_0_2.pext`
   — usuário vai instalar no Playnite e testar
 - **`Modelo Teste 02` é a versão ativa de desenvolvimento** (cópia do 01 com
   as correções); `Modelo Teste 01` continua congelado como referência
@@ -42,6 +42,15 @@ O usuário pediu para lembrar — não implementar ainda:
   `logger.Debug` no `GetGames`)
 - **Cache parcial retomável** — salvar o progresso do download mesmo se o
   usuário cancelar no meio (hoje cancelar zera o progresso)
+
+## Regra de versionamento de `.pext`
+
+- **Sempre que gerar um novo `.pext`, aumentar a versão em 1 na unidade
+  mais baixa** (ex.: 0.0.1 → 0.0.2), a menos que o usuário peça outro número.
+- Isso vale para o `Version` no `extension.yaml` (cópia em `playnite-plugin/`
+  e a de conferência na pasta do modelo) antes do `dotnet build` + `Toolbox pack`.
+- Bump para release oficial (`manifests/installer.yaml`, tag, `gh release`)
+  continua só a pedido do usuário.
 
 ## Congelamentos
 
