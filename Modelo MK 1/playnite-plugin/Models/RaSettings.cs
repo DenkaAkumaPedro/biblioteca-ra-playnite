@@ -6,6 +6,7 @@ namespace BibliotecaRA.Models
     public class RaSettings : ObservableObject
     {
         private string apiKey = string.Empty;
+        private string username = string.Empty;
         private List<string> romFolders = new List<string>();
         private string romExtensions =
             ".md, .bin, .gen, .nes, .fds, .sfc, .smc, .gba, .gb, .gbc, .gg, .sms, .a26, .j64, .n64, .z64, .v64, .iso, .cue, .chd, .pbp, .cso, .7z, .zip";
@@ -16,6 +17,12 @@ namespace BibliotecaRA.Models
         {
             get => apiKey;
             set => SetValue(ref apiKey, value);
+        }
+
+        public string Username
+        {
+            get => username;
+            set => SetValue(ref username, value);
         }
 
         public List<string> RomFolders

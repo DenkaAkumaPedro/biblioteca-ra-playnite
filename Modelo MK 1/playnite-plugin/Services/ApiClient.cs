@@ -115,6 +115,27 @@ namespace BibliotecaRA.Services
             {
                 throw new RaApiException("Resposta inesperada da API do RetroAchievements.");
             }
+
+            var username = getSettings().Username;
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                var userBody = await GetStringAsync(
+                    "API_GetUserCompletionProgress.php",
+                    new Dictionary<string, string>
+                    {
+                        { "u", username.Trim() },
+                        { "c", "1" },
+                        { "o", "0" }
+                    },
+                    ct).ConfigureAwait(false);
+
+                var trimmed = (userBody ?? string.Empty).TrimStart();
+                if (!trimmed.StartsWith("{"))
+                {
+                    throw new RaApiException(
+                        "Resposta inesperada ao consultar a biblioteca do usuário. Verifique o nome de usuário.");
+                }
+            }
         }
 
         private static string BuildUrl(string endpoint, IDictionary<string, string> parameters)

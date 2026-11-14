@@ -15,6 +15,14 @@
                    Foreground="Gray"
                    Margin="0,4,0,12"/>
 
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAUsernameLabel}"
+                   FontWeight="Bold"/>
+        <TextBox Text="{Binding Settings.Username, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAUsernameHelp}"
+                   TextWrapping="Wrap"
+                   Foreground="Gray"
+                   Margin="0,4,0,12"/>
+
         <TextBlock Text="{DynamicResource LOCBibliotecaRAFoldersLabel}"
                    FontWeight="Bold"/>
         <ListBox x:Name="FoldersList"

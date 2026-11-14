@@ -139,6 +139,7 @@ como exemplo). Leitura não altera nada. Escrita, nunca.
 
 ## 6. Como trabalhar neste projeto
 
+- Ao iniciar a sessão, ler `ESTADO.md` junto com `PLANO.md` e `REGRAS.md`
 - Escrever em **português**, sem exagero
 - Seguir o estilo e as convenções que já existirem nos arquivos
 - Não adicionar comentário de código sem o usuário pedir

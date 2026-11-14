@@ -11,10 +11,10 @@ para a biblioteca do usuário.
 
 | # | Funcionalidade | Descrição |
 |---|----------------|-----------|
-| 1 | Importar catálogo completo | Todos os jogos do RA entram na biblioteca como **não instalados** |
+| 1 | Importar jogos da conta | Só os jogos da **conta RA do usuário** (`API_GetUserCompletionProgress`) + jogos detectados por hash no PC. Catálogo completo só como cache interno de hashes — nunca importado inteiro |
 | 2 | Metadados | Nome, plataforma, ícone, capa, gênero, desenvolvedora, editora, ano, links |
 | 3 | Detectar instalados | Casar os hashes MD5 do RA com os arquivos de ROM presentes no PC do usuário |
-| 4 | Configuração | Campo para a Web API Key do RA, pastas de ROM a varrer, botões de ação |
+| 4 | Configuração | Campo para a Web API Key, **usuário do RA**, pastas de ROM a varrer, botões de ação |
 
 ### Fora do escopo (backlog para depois)
 
@@ -93,8 +93,9 @@ código. Documentação: `/getting-started`.
 
 | Endpoint | Parâmetros | Uso |
 |----------|-----------|-----|
-| `API_GetConsoleIDs.php` | `y`, `a=1` (só ativos), `g=1` (só jogos) | Lista de sistemas/plataformas |
-| `API_GetGameList.php` | `y`, `i=<consoleId>`, `h=1`, `f`, `o`, `c` | Catálogo de um sistema + hashes |
+| `API_GetUserCompletionProgress.php` | `y`, `u=<usuário>`, `c`, `o` | **Jogos da conta do usuário** (fonte do import) |
+| `API_GetConsoleIDs.php` | `y`, `a=1` (só ativos), `g=1` (só jogos) | Lista de sistemas (cache de hashes) |
+| `API_GetGameList.php` | `y`, `i=<consoleId>`, `h=1`, `f`, `o`, `c` | Catálogo de um sistema + hashes (só cache interno p/ detecção) |
 | `API_GetGame.php` | `y`, `i=<gameId>` | Detalhes de um jogo |
 | `API_GetGameHashes.php` | `y`, `i=<gameId>` | Lista de ROMs compatíveis |
 
@@ -148,26 +149,26 @@ dependência extra** para a detecção.
 ## 4. Fluxo de dados
 
 ```
-1. Settings: usuário cola a Web API Key + escolhe pastas de ROM
+1. Settings: usuário cola a Web API Key + nome de usuário do RA + pastas de ROM
                     |
-2. API_GetConsoleIDs.php  ──> lista de sistemas (Mega Drive, SNES, ...)
+2. API_GetUserCompletionProgress.php (u=<usuário>, paginado)
+   ──> jogos da conta do usuário  ── importados SEMPRE
                     |
-3. Para cada sistema:
-   API_GetGameList.php?i=<id>&h=1&o=<offset>&c=<page>
+3. Se "Detectar ROMs" ligado:
+   API_GetConsoleIDs + API_GetGameList(h=1) paginado
+   ──> cache de hashes (GetPluginUserDataPath)  ── NUNCA importado inteiro
                     |
-                    +-- cache em disco (GetPluginUserDataPath)
+4. HashService: varre pastas, MD5, casa com Hashes[]
+   ──> jogos detectados também entram no import (união)
                     |
-4. Montar GameMetadata:
+5. Montar GameMetadata (conta ∪ detectados):
       GameId      = ID do RA          (chave de reconciliação)
       Name        = Title
       Platforms   = ConsoleName
       Icon        = https://retroachievements.org + ImageIcon
       Links       = https://retroachievements.org/game/<ID>
                     |
-5. O Playnite chama GetGames() e insere cada GameMetadata na biblioteca
-                    |
-6. HashService: varre as pastas do usuário, MD5 de cada arquivo,
-   casa com Hashes[]  ──> IsInstalled = true + GameAction apontando o arquivo
+6. O Playnite chama GetGames() e insere cada GameMetadata na biblioteca
 ```
 
 ### Paginação e volume
@@ -233,24 +234,27 @@ Então:
 ## 6. Estrutura de pastas
 
 A raiz do projeto é também a raiz do repositório git
-(`github.com/DenkaAkumaPedro/biblioteca-ra-playnite`). O addon da versão de
-teste fica todo dentro de `Modelo Teste 01\`:
+(`github.com/DenkaAkumaPedro/biblioteca-ra-playnite`). O addon em
+desenvolvimento fica dentro de `Modelo Teste 02\` (o `Modelo Teste 01` é
+referência congelada da v0.0.1):
 
 ```
 Biblioteca RA no Playnite\
-├── PLANO.md                  este arquivo (cópia em Modelo Teste 01)
-├── REGRAS.md                 regras de operação e escopo (cópia em Modelo Teste 01)
+├── PLANO.md                  este arquivo
+├── REGRAS.md                 regras de operação e escopo
 ├── README.md                 instalar / usar / desenvolver (exibido no GitHub)
+├── Notas.md                  bugs relatados no teste da 0.0.1
+├── ESTADO.md                 memória de estado entre sessões
 ├── .gitignore
 ├── addon.yaml                manifest do addon browser (verify addon usa este)
 ├── manifests\
 │   └── installer.yaml        manifesto de instalação → aponta para a release
 ├── .github\workflows\
-│   └── build.yml             CI: build a cada push
-└── Modelo Teste 01\
-    ├── PLANO.md, REGRAS.md   cópias sincronizadas
+│   └── build.yml             CI: build do Modelo Teste 02 a cada push
+├── Modelo Teste 01\          referência congelada (v0.0.1) — NÃO ALTERAR
+└── Modelo Teste 02\          versão ativa de desenvolvimento
+    ├── PLANO.md, REGRAS.md   cópias (snapshot; fonte de verdade é a raiz)
     ├── extension.yaml        cópia para conferência; o de verdade sai do build
-    ├── BibliotecaRA_*.pext   pacote gerado (gitignored)
     └── playnite-plugin\
         ├── BibliotecaRA.csproj
         ├── BibliotecaRA.slnx
@@ -264,7 +268,7 @@ Biblioteca RA no Playnite\
         │   └── RaSettings.cs     settings do addon
         ├── Services\
         │   ├── ApiClient.cs      HttpClient, API key, retry, rate limit
-        │   ├── CatalogService.cs GetGameList/GetConsoleIDs + cache em disco
+        │   ├── CatalogService.cs biblioteca da conta + cache de hashes
         │   └── HashService.cs    MD5 + varredura de pastas
         └── Localization\
             ├── pt_BR.xaml

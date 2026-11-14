@@ -76,6 +76,18 @@ namespace BibliotecaRA
                 errors.Add("A Web API Key parece inválida (muito curta).");
             }
 
+            if (string.IsNullOrWhiteSpace(Settings.ApiKey) &&
+                !string.IsNullOrWhiteSpace(Settings.Username))
+            {
+                errors.Add("Informe a Web API Key para usar com o usuário do RetroAchievements.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(Settings.ApiKey) &&
+                string.IsNullOrWhiteSpace(Settings.Username))
+            {
+                errors.Add("Informe o usuário do RetroAchievements (nome no site).");
+            }
+
             if (Settings.CacheTtlHours <= 0)
             {
                 errors.Add("O TTL do cache deve ser maior que zero.");
@@ -125,7 +137,10 @@ namespace BibliotecaRA
                     await plugin.TestConnectionAsync(cts.Token);
                 }
 
-                StatusText = "Conexão OK — a Web API Key funciona.";
+                StatusText = "Conexão OK — Web API Key" +
+                             (string.IsNullOrWhiteSpace(Settings.Username)
+                                 ? "."
+                                 : " e usuário \"" + Settings.Username.Trim() + "\".");
             }
             catch (Exception e)
             {
@@ -137,7 +152,7 @@ namespace BibliotecaRA
             }
         }
 
-        public async void ForceCatalogUpdate()
+        public async void ForceLibraryUpdate()
         {
             if (Busy)
             {
@@ -145,16 +160,14 @@ namespace BibliotecaRA
             }
 
             Busy = true;
-            StatusText = "Baixando o catálogo do RetroAchievements...";
+            StatusText = "Atualizando a biblioteca do RetroAchievements...";
             try
             {
                 using (var cts = new CancellationTokenSource(TimeSpan.FromMinutes(30)))
                 {
-                    var cache = await plugin.RefreshCatalogAsync(
-                        message => StatusText = message, cts.Token);
-                    var gameCount = cache.GamesByConsole.Values.Sum(list => list.Count);
-                    StatusText = "Catálogo atualizado: " + gameCount + " jogos em " +
-                                 cache.GamesByConsole.Count + " sistemas.";
+                    var message = await plugin.RefreshLibraryAsync(
+                        text => StatusText = text, cts.Token);
+                    StatusText = message;
                 }
             }
             catch (OperationCanceledException)
@@ -174,7 +187,7 @@ namespace BibliotecaRA
         public void ClearCache()
         {
             plugin.ClearCache();
-            StatusText = "Cache do catálogo limpo.";
+            StatusText = "Cache da biblioteca e do catálogo limpo.";
         }
 
         private void SyncFolders()

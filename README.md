@@ -8,7 +8,7 @@ usuário, detectando quais ROMs você já tem no PC por hash MD5.
 > [PLANO.md](PLANO.md) para o escopo completo e [REGRAS.md](REGRAS.md) para
 > as regras de operação deste projeto.
 
-## O que faz (Modelo Teste 02)
+## O que faz (Modelo MK 1)
 
 - Importa os jogos da **sua conta do RetroAchievements** (jogos com progresso
   no site) para a biblioteca do Playnite
@@ -65,12 +65,12 @@ usuário, detectando quais ROMs você já tem no PC por hash MD5.
 
 ```powershell
 # build
-dotnet build "Modelo Teste 02/playnite-plugin/BibliotecaRA.slnx" -c Release
+dotnet build "Modelo MK 1/playnite-plugin/BibliotecaRA.slnx" -c Release
 
-# empacotar (gera o .pext dentro de "Modelo Teste 02")
+# empacotar (gera o .pext dentro de "Modelo MK 1")
 & "C:\caminho\do\Playnite\Toolbox.exe" pack `
-  "Modelo Teste 02/playnite-plugin/bin/Release/net462" `
-  "Modelo Teste 02"
+  "Modelo MK 1/playnite-plugin/bin/Release/net462" `
+  "Modelo MK 1"
 
 # validar o manifest do addon browser
 & "C:\caminho\do\Playnite\Toolbox.exe" verify addon addon.yaml
@@ -81,11 +81,11 @@ dotnet build "Modelo Teste 02/playnite-plugin/BibliotecaRA.slnx" -c Release
 ```
 ├── addon.yaml                  manifest exibido no navegador de addons do Playnite
 ├── manifests/installer.yaml    manifesto de instalação (aponta para a release)
-├── .github/workflows/build.yml CI: build do Modelo Teste 02 a cada push
-├── Notas.md                    bugs relatados no teste da 0.0.1
+├── .github/workflows/build.yml CI: build do Modelo MK 1 a cada push
+├── Notas.md                    bugs relatados nos testes
 ├── ESTADO.md                   memória de estado entre sessões
-├── Modelo Teste 01/            referência congelada (v0.0.1)
-└── Modelo Teste 02/            versão ativa de desenvolvimento
+├── Modelo Base/                referência CONGELADA para sempre (o modelo mais simples)
+└── Modelo MK 1/                versão ativa de desenvolvimento
     └── playnite-plugin/        projeto C# (net462, PlayniteSDK 6.17.0)
         ├── BibliotecaRA.cs             LibraryPlugin + GetGames()
         ├── BibliotecaRASettings*.cs/xaml  configurações (key + usuário do RA)
@@ -108,7 +108,7 @@ dotnet build "Modelo Teste 02/playnite-plugin/BibliotecaRA.slnx" -c Release
 - `Newtonsoft.Json` fixo em **10.0.3** (a versão que o Playnite usa)
 - Dado de usuário só em `GetPluginUserDataPath()` — nunca na pasta da extensão
 
-## Limitações conhecidas (Modelo Teste 02)
+## Limitações conhecidas (Modelo MK 1)
 
 - Gênero, desenvolvedora e editora não vêm da lista da conta (Fase 6,
   metadados detalhados, fica para depois)

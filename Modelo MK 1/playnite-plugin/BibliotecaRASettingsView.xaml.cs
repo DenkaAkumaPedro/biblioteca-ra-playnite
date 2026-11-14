@@ -30,7 +30,7 @@ namespace BibliotecaRA
 
         private void Force_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel?.ForceCatalogUpdate();
+            ViewModel?.ForceLibraryUpdate();
         }
 
         private void Clear_Click(object sender, RoutedEventArgs e)

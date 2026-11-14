@@ -235,24 +235,30 @@ Então:
 
 A raiz do projeto é também a raiz do repositório git
 (`github.com/DenkaAkumaPedro/biblioteca-ra-playnite`). O addon em
-desenvolvimento fica dentro de `Modelo Teste 02\` (o `Modelo Teste 01` é
-referência congelada da v0.0.1):
+desenvolvimento fica dentro de `Modelo MK 1\` (o `Modelo Base` é a
+referência congelada para sempre do modelo mais simples; o antigo
+`Modelo Teste 01` foi deletado — o git guarda o histórico):
 
 ```
 Biblioteca RA no Playnite\
 ├── PLANO.md                  este arquivo
 ├── REGRAS.md                 regras de operação e escopo
 ├── README.md                 instalar / usar / desenvolver (exibido no GitHub)
-├── Notas.md                  bugs relatados no teste da 0.0.1
+├── Notas.md                  bugs relatados nos testes
 ├── ESTADO.md                 memória de estado entre sessões
 ├── .gitignore
 ├── addon.yaml                manifest do addon browser (verify addon usa este)
 ├── manifests\
 │   └── installer.yaml        manifesto de instalação → aponta para a release
 ├── .github\workflows\
-│   └── build.yml             CI: build do Modelo Teste 02 a cada push
-├── Modelo Teste 01\          referência congelada (v0.0.1) — NÃO ALTERAR
-└── Modelo Teste 02\          versão ativa de desenvolvimento
+│   └── build.yml             CI: build do Modelo MK 1 a cada push
+├── Modelo Base\              referência CONGELADA para sempre — NÃO ALTERAR
+│   ├── PLANO.md, REGRAS.md   snapshot (não sincronizar)
+│   ├── extension.yaml        cópia de conferência
+│   ├── BibliotecaRA_..._0_0_1.pext
+│   ├── BibliotecaRA_..._0_0_2.pext
+│   └── playnite-plugin\      fonte da v0.0.2 (modelo mais simples)
+└── Modelo MK 1\              versão ativa de desenvolvimento
     ├── PLANO.md, REGRAS.md   cópias (snapshot; fonte de verdade é a raiz)
     ├── extension.yaml        cópia para conferência; o de verdade sai do build
     └── playnite-plugin\
