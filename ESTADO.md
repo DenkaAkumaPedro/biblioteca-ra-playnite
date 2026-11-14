@@ -8,54 +8,59 @@ Atualizado em: 14/11/2026
 
 ## Situação
 
-- **Reorganização de pastas concluída (Etapa 0 da v0.1.0):**
-  - `Modelo Teste 01` **deletado** (apresentava erros; não serve de
-    referência nem de base — o git guarda o histórico)
-  - `Modelo Teste 02` renomeado para **`Modelo Base`** — congelado para
-    sempre como referência do modelo mais simples do projeto (mantém os
-    `.pext` 0.0.1 e 0.0.2 como histórico local)
-  - **`Modelo MK 1`** criado como cópia do Modelo Base (sem `bin`/`obj`/
-    `.pext`, que são artefatos regeneráveis) — **versão ativa**
-- **Planejamento da v0.1.0 aprovado pelo usuário** (itens 2–5 do
-  `Notas.md` + versão 0.1.0). Decisões do usuário:
-  - Item 4 = coletar pastas das **ROMs dos jogos** (`Game.Roms[].Path` +
-    `GameActions`), não pastas dos emuladores
-  - Playtime: **`max(local, RA)`** — só sobe, nunca diminui/duplica
-  - Sessões no plugin GameActivity: **não** nesta versão (deixar p/ depois)
+- **Versão 0.1.0 implementada no `Modelo MK 1`** — todas as etapas
+  aprovadas do `Notas.md` concluídas:
+  1. ✅ Reorganização: `Modelo Teste 01` deletado; `Modelo Teste 02` →
+     **`Modelo Base`** (congelado p/ sempre); **`Modelo MK 1`** criado como
+     cópia e é a versão ativa (CI compila ele)
+  2. ✅ Ícone: joystick oficial do RA (`ra-joystick-square.png` 128×128 do
+     repo RAWeb) + `IconUrl` no `addon.yaml`; `Toolbox verify addon` passou
+  3. ✅ Atividade (itens 2+3 do Notas): `ActivityService` com caches
+     `activity_lastplayed.json` e `activity_playtime.json`; escrita no
+     `OnLibraryUpdated` (padrão AniList: `BufferedUpdate` + `Games.Update`,
+     trava `SemaphoreSlim`, lock `Wait(0)`); `LastActivity` só avança;
+     `PlayCount` = 1; `Playtime` = **max(local, RA)**; checkboxes
+     `SyncActivity`/`SyncPlaytime` (padrão ligado); progresso no status/log
+     com gravação incremental do cache de tempo
+  4. ✅ Pastas (item 4): botão **"Importar pastas dos jogos"** coleta
+     diretórios de `Game.Roms[].Path` + `GameActions` Type File (decisão do
+     usuário — a config de emuladores do Playnite não tem pasta de ROM)
+  5. ✅ Versão **0.1.0** em ambos os `extension.yaml` + `UserAgent`
+     `BibliotecaRA/0.1.0`; docs (Notas/README/PLANO/ESTADO) atualizados
+- **`.pext` 0.1.0 gerado** em
+  `Modelo MK 1\BibliotecaRA_46ec2715-329d-4e68-98ca-a35b7259cc5a_0_1_0.pext`
+- Build Release sem erros (só aviso NU1903 do Newtonsoft 10.0.3, pinado
+  de propósito pela versão do Playnite)
 - Repo `biblioteca-ra-playnite` no GitHub: push automático ativo
-- CI (`build.yml`) agora compila o **Modelo MK 1**
+- CI (`build.yml`) compila o **Modelo MK 1**
 - Fase 6 (metadados detalhados) e backlog continuam fora do escopo
+- **Release oficial** (`manifests/installer.yaml`, tag, `gh release`)
+  continua só a pedido do usuário
 
-### Ordem das etapas da v0.1.0 (aprovada)
+## Como funciona a sincronização de atividade (0.1.0)
 
-0. ✅ Reorganização (feita) — 1. Ícone do RA → 2. Atividade (`LastActivity`
-   + `Playtime`) → 3. Pastas dos jogos → 4. Docs + bump 0.1.0 + build/pack
-
-### Correções da 0.0.2 já aplicadas (Notas.md)
-
-1. **Importação limitada à conta do usuário** — `GetGames()` baixa só a
-   biblioteca da conta via `API_GetUserCompletionProgress` (precisa do
-   novo setting *Usuário do RetroAchievements*). O catálogo completo só é
-   baixado como cache interno de hashes, e **apenas** se “Detectar ROMs”
-   estiver ligado — nunca é importado inteiro para a biblioteca.
-   Importa = jogos da conta ∪ jogos detectados por hash no PC.
-2. **Demora na sincronização** — reduzida ao eliminar o import do catálogo
-   inteiro. Com detecção desligada, sincroniza só a conta (rápido). Com
-   detecção ligada, a 1ª vez ainda baixa o catálogo de hashes (necessário;
-   a API do RA não busca por MD5); depois usa cache.
-3. **Parecia não atualizar / perdia tudo ao cancelar** — parcialmente
-   mitigado pelo volume menor. Ver “Melhorias adiadas” abaixo.
+- **Automática**: `OnLibraryUpdated` dispara após a atualização da
+  biblioteca do Playnite → roda em `Task.Run` (não bloqueia), com trava
+  anti-reentrada; loga o resultado; notificação só se algo mudou ou falhou
+- **Manual**: botão "Forçar atualização da biblioteca" refaz tudo com
+  força total (status visível na tela de configurações)
+- **Dados**: `API_GetUserRecentlyPlayedGames` (paginado 50, UTC → local)
+  p/ `LastActivity`; `API_GetGameInfoAndUserProgress` (1 req/jogo) p/
+  `Playtime` (segundos) — só consulta jogo novo ou cuja última vez jogado
+  avançou desde a consulta; fallback grátis: `MostRecentAwardedDate` do
+  cache da biblioteca da conta
+- **Janela de frescor**: cache de atividade vale 10 min (força total
+  ignora); caches de tempo gravam a cada 10 consultas (cancelar não perde)
 
 ## Melhorias adiadas (guardadas para versão futura)
 
 O usuário pediu para lembrar — não implementar ainda:
 
-- **Progresso visível na UI** durante o sync (hoje só vai para o log
-  `logger.Debug` no `GetGames`)
-- **Cache parcial retomável** — salvar o progresso do download mesmo se o
-  usuário cancelar no meio (hoje cancelar zera o progresso)
-- **Sessões no plugin GameActivity** (padrão do addon AniList) — o usuário
-  optou por deixar para uma versão futura
+- **Progresso visível na UI** durante o sync do `GetGames` (hoje só log)
+- **Cache parcial retomável** do download do `GetGames` (atividade/tempo
+  **já** grava incremental)
+- **Sessões no plugin GameActivity** (padrão do addon AniList) — usuário
+  optou por deixar para versão futura
 
 ## Regra de versionamento de `.pext`
 
@@ -75,15 +80,19 @@ O usuário pediu para lembrar — não implementar ainda:
   simples do projeto). Não alterar nada dentro dela — nem código, nem
   documentação — sem pedido explícito do usuário.
 - As cópias de `PLANO.md`/`REGRAS.md` dentro de `Modelo Base` são snapshot;
-  **parar de sincronizar** por lá.
+  **parar de sincronizar** por lá. Mesma coisa para as cópias dentro de
+  `Modelo MK 1` — fonte de verdade é a raiz.
 - `Modelo Teste 01` foi deletado a pedido do usuário (histórico no git).
 - O congelamento vale até o usuário pedir o contrário.
 
 ## Próximo passo
 
-- Implementar a v0.1.0 no **`Modelo MK 1`** na ordem aprovada:
-  Ícone → Atividade (itens 2+3) → Pastas (item 4) → Docs + 0.1.0 + build.
-- Usuário instalar o `.pext` gerado (**Configurações → Add-ons → Instalar
-  do arquivo**) e testar: usuário do RA, atualizar biblioteca, conferir
-  `LastActivity`/`Playtime` em alguns jogos.
+- Usuário instalar o `.pext` 0.1.0 do `Modelo MK 1`
+  (**Configurações → Add-ons → Instalar do arquivo**) e testar:
+  - atualizar biblioteca → conferir `LastActivity`/`Playtime`/`PlayCount`
+    em alguns jogos conhecidos (1ª sync de tempo leva ~2–4 min/500 jogos)
+  - botão **Importar pastas dos jogos** nas configurações
+  - novo ícone do RA na lista de addons
+- Na volta: registrar resultados/bugs no `Notas.md` e decidir se vira
+  release oficial ou próxima versão.
 - Antes de qualquer edição: ler este arquivo, o PLANO e as REGRAS.

@@ -4,7 +4,7 @@ Addon para o **Playnite** que importa o catálogo do
 [RetroAchievements](https://retroachievements.org) para a biblioteca do
 usuário, detectando quais ROMs você já tem no PC por hash MD5.
 
-> **Versão de teste: 0.0.1** — funcionalidade básica de importação. Veja
+> **Versão: 0.1.0** — importação + atividade/tempo de jogo. Veja
 > [PLANO.md](PLANO.md) para o escopo completo e [REGRAS.md](REGRAS.md) para
 > as regras de operação deste projeto.
 
@@ -21,12 +21,18 @@ usuário, detectando quais ROMs você já tem no PC por hash MD5.
   interno de hashes, e apenas se a detecção de ROMs estiver ligada
 - Preenche: nome, plataforma, ícone e link para a página do jogo no RA
 - Jogo detectado como instalado ganha `GameAction` apontando para a ROM
+- **Sincroniza atividade e tempo de jogo** a cada atualização de biblioteca:
+  - `LastActivity` = última vez jogado no RA (só avança, nunca retrocede)
+  - `PlayCount` = 1 quando há atividade no RA e estava zerado
+  - `Playtime` = **max(tempo local, tempo do RA)** — só sobe, nunca diminui
 - Cache local com validade configurável (a API do RA exige cache agressivo)
 - Web API Key e usuário guardados só nas configurações locais (`ExtensionsData`)
+- Ícone oficial do RetroAchievements (joystick do repo RAWeb)
 
 ## Instalar
 
-1. Baixe o `.pext` na [release v0.0.1](https://github.com/DenkaAkumaPedro/biblioteca-ra-playnite/releases/tag/v0.0.1)
+1. Baixe o `.pext` da [página de releases](https://github.com/DenkaAkumaPedro/biblioteca-ra-playnite/releases)
+   ou gere localmente com o `Toolbox pack` (ver **Desenvolver**)
 2. No Playnite: **Configurações → Add-ons → Instalar do arquivo** e escolha
    o arquivo baixado
 3. Reinicie o Playnite quando solicitado
@@ -39,20 +45,25 @@ usuário, detectando quais ROMs você já tem no PC por hash MD5.
    e copie a chave (ela nunca é gravada no código nem enviada a terceiros
    além do próprio RA)
 3. Informe seu **usuário do RetroAchievements** (nome no site, não a chave)
-4. Adiciona as **pastas de ROM** do seu PC
+4. Adiciona as **pastas de ROM** do seu PC (ou use o botão
+   **Importar pastas dos jogos** para coletar automaticamente as pastas das
+   ROMs/ação de arquivo dos jogos já vinculados no Playnite)
 5. Ajuste as **extensões de arquivo** se quiser (padrão cobre os formats
    comuns de retro)
-6. Clique em **Testar conexão** para confirmar chave e usuário
-7. Volte à biblioteca e use **Atualizar biblioteca** do Playnite — os jogos
-   da sua conta serão baixados e cacheados na primeira vez
+6. Confira os checkboxes de **atividade e tempo de jogo** (padrão ligado)
+7. Clique em **Testar conexão** para confirmar chave e usuário
+8. Volte à biblioteca e use **Atualizar biblioteca** do Playnite — os jogos
+   da sua conta serão baixados e cacheados na primeira vez, e a atividade
+   é sincronizada em seguida
 
 ### Botões das configurações
 
 | Botão | Função |
 |-------|--------|
 | Testar conexão | Valida a Web API Key e (se informado) o usuário |
-| Forçar atualização da biblioteca | Baixa de novo os jogos da conta; com detecção ligada, atualiza também o cache de hashes |
-| Limpar cache | Apaga o cache local (próxima atualização baixa de novo) |
+| Forçar atualização da biblioteca | Baixa de novo os jogos da conta, atualiza o cache de hashes (se ligado) e **refaz a sincronização de atividade/tempo com força total** |
+| Limpar cache | Apaga todos os caches locais (biblioteca, hashes **e atividade**) — próxima atualização baixa de novo |
+| Importar pastas dos jogos | Coleta as pastas das ROMs e ações de arquivo dos jogos do Playnite para a lista de pastas |
 
 ## Desenvolver
 
@@ -87,10 +98,10 @@ dotnet build "Modelo MK 1/playnite-plugin/BibliotecaRA.slnx" -c Release
 ├── Modelo Base/                referência CONGELADA para sempre (o modelo mais simples)
 └── Modelo MK 1/                versão ativa de desenvolvimento
     └── playnite-plugin/        projeto C# (net462, PlayniteSDK 6.17.0)
-        ├── BibliotecaRA.cs             LibraryPlugin + GetGames()
+        ├── BibliotecaRA.cs             LibraryPlugin + GetGames() + OnLibraryUpdated()
         ├── BibliotecaRASettings*.cs/xaml  configurações (key + usuário do RA)
         ├── Models/                     modelos da API do RA + settings
-        ├── Services/                   ApiClient, biblioteca da conta, hash MD5
+        ├── Services/                   ApiClient, biblioteca da conta, hash MD5, atividade
         └── Localization/               en_US.xaml, pt_BR.xaml
 ```
 
@@ -120,8 +131,19 @@ dotnet build "Modelo MK 1/playnite-plugin/BibliotecaRA.slnx" -c Release
   atualizações repetidas em pouco tempo
 - Com detecção de ROMs ligada, a 1ª sincronização baixa o catálogo de
   hashes inteiro (necessário — a API não busca por MD5); depois usa cache
-- Progresso do sync não aparece na UI do Playnite (só no log) — adiado
-- Cancelar no meio do download não retoma de onde parou — adiado
+- **Tempo de jogo**: a 1ª sincronização consulta 1 requisição por jogo
+  jogado no RA (≈2–4 min para 500 jogos, com progresso no status/log);
+  depois só busca jogos novos ou jogados desde a última sync. O tempo
+  aplicado é sempre o maior entre o local e o do RA
+- **Atividade**: a data do RA vem em UTC e é convertida para o fuso local;
+  `LastActivity` só avança (nunca retrocede), `PlayCount` só vira 1
+- A sincronização automática de atividade roda em segundo plano a cada
+  atualização de biblioteca (resultado no log; notificação só quando algo
+  mudou ou falha)
+- Progresso do `GetGames` (import/detecção) não aparece na UI do Playnite
+  (só no log) — adiado
+- Cancelar no meio do download do catálogo não retoma de onde parou —
+  adiado (o cache de tempo de jogo **já** grava incrementalmente)
 
 ## Links
 

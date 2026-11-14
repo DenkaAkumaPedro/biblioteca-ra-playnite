@@ -15,6 +15,8 @@ para a biblioteca do usuário.
 | 2 | Metadados | Nome, plataforma, ícone, capa, gênero, desenvolvedora, editora, ano, links |
 | 3 | Detectar instalados | Casar os hashes MD5 do RA com os arquivos de ROM presentes no PC do usuário |
 | 4 | Configuração | Campo para a Web API Key, **usuário do RA**, pastas de ROM a varrer, botões de ação |
+| 5 | Atividade e tempo de jogo | `LastActivity` (última vez jogado, só avança), `PlayCount` (= 1 com atividade) e `Playtime` = **max(local, RA)** por jogo; escrita no `OnLibraryUpdated` com caches próprios (`activity_*.json`); checkboxes de sync |
+| 6 | Pastas dos jogos | Botão "Importar pastas dos jogos": coleta diretórios de `Game.Roms[].Path` + `GameActions` Type File dos jogos do Playnite para a lista de pastas |
 
 ### Fora do escopo (backlog para depois)
 
@@ -93,11 +95,13 @@ código. Documentação: `/getting-started`.
 
 | Endpoint | Parâmetros | Uso |
 |----------|-----------|-----|
-| `API_GetUserCompletionProgress.php` | `y`, `u=<usuário>`, `c`, `o` | **Jogos da conta do usuário** (fonte do import) |
+| `API_GetUserCompletionProgress.php` | `y`, `u=<usuário>`, `c`, `o` | **Jogos da conta do usuário** (fonte do import) + fallback barato de atividade (`MostRecentAwardedDate`) |
 | `API_GetConsoleIDs.php` | `y`, `a=1` (só ativos), `g=1` (só jogos) | Lista de sistemas (cache de hashes) |
 | `API_GetGameList.php` | `y`, `i=<consoleId>`, `h=1`, `f`, `o`, `c` | Catálogo de um sistema + hashes (só cache interno p/ detecção) |
 | `API_GetGame.php` | `y`, `i=<gameId>` | Detalhes de um jogo |
 | `API_GetGameHashes.php` | `y`, `i=<gameId>` | Lista de ROMs compatíveis |
+| `API_GetUserRecentlyPlayedGames.php` | `y`, `u`, `c` (máx. 50), `o` | **Última vez jogado** por jogo (`LastPlayed` "yyyy-MM-dd HH:mm:ss" em UTC) → `LastActivity` |
+| `API_GetGameInfoAndUserProgress.php` | `y`, `g=<gameId>`, `u` | **Tempo de jogo** do usuário no jogo (`UserTotalPlaytime` em **segundos**; 0 = nunca jogou) — 1 requisição por jogo |
 
 ### Formato de `API_GetGameList.php` (confirmado na documentação)
 
