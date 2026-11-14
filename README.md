@@ -4,7 +4,8 @@ Addon para o **Playnite** que importa o catálogo do
 [RetroAchievements](https://retroachievements.org) para a biblioteca do
 usuário, detectando quais ROMs você já tem no PC por hash MD5.
 
-> **Versão: 0.1.0** — importação + atividade/tempo de jogo. Veja
+> **Versão: 0.1.1** — importação + atividade/tempo de jogo, com
+> tratamento de rate limit do RA (429). Veja
 > [PLANO.md](PLANO.md) para o escopo completo e [REGRAS.md](REGRAS.md) para
 > as regras de operação deste projeto.
 
@@ -132,9 +133,13 @@ dotnet build "Modelo MK 1/playnite-plugin/BibliotecaRA.slnx" -c Release
 - Com detecção de ROMs ligada, a 1ª sincronização baixa o catálogo de
   hashes inteiro (necessário — a API não busca por MD5); depois usa cache
 - **Tempo de jogo**: a 1ª sincronização consulta 1 requisição por jogo
-  jogado no RA (≈2–4 min para 500 jogos, com progresso no status/log);
-  depois só busca jogos novos ou jogados desde a última sync. O tempo
-  aplicado é sempre o maior entre o local e o do RA
+  jogado no RA, a 1 req/s para respeitar o rate limit do site (≈8–9 min
+  para 500 jogos, com progresso no status/log); depois só busca jogos
+  novos ou jogados desde a última sync. O tempo aplicado é sempre o maior
+  entre o local e o do RA. Se o RA responder 429, o addon espera (15/60/180s,
+  respeitando o `Retry-After`), pausa todas as requisições e, se ainda
+  assim estourar, para com o cache parcial salvo — a próxima sync continua
+  de onde parou (notificação informativa, não é falha)
 - **Atividade**: a data do RA vem em UTC e é convertida para o fuso local;
   `LastActivity` só avança (nunca retrocede), `PlayCount` só vira 1
 - A sincronização automática de atividade roda em segundo plano a cada

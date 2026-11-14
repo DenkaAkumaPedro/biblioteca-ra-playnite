@@ -8,8 +8,26 @@ Atualizado em: 14/11/2026
 
 ## Situação
 
-- **Versão 0.1.0 implementada no `Modelo MK 1`** — todas as etapas
-  aprovadas do `Notas.md` concluídas:
+- **Versão 0.1.1 implementada no `Modelo MK 1`** — correção do 429 relatado
+  no teste da 0.1.0 (`Notas.md`):
+  1. ✅ Causa diagnosticada: **rate limit do servidor do RA** — o addon pedia
+     4 req/s (250 ms) e o sync de tempo faz 1 req/jogo; batia no limite e a
+     sync morria antes de aplicar o tempo
+  2. ✅ `ApiClient`: taxa base **1 req/s** (era 4); em 429 espera
+     **15s/60s/180s** (respeita `Retry-After` do servidor); **cooldown
+     global** (toda requisição pausa, não só a que falhou); **taxa
+     adaptativa** (dobra a cada 429 até 10s, volta devagar ao normal após
+     5 min sem 429); exceção nova `RaRateLimitException`
+  3. ✅ `ActivityService`: se estourar mesmo assim, o sync de tempo **para
+     graciosamente** — cache parcial salvo, `PlaytimeSyncResult` com
+     `RateLimited`/`Completed`/`Total`, e o `pending` da próxima sync retoma
+     só o que faltou
+  4. ✅ `BibliotecaRA.cs`: notificação **informativa** no rate limit (não
+     mais "Falha ao sincronizar atividade"); o tempo já consultado é
+     aplicado mesmo na parada parcial
+  5. ✅ Versão **0.1.1** em ambos os `extension.yaml` + `UserAgent`
+     `BibliotecaRA/0.1.1`; Notas/README/ESTADO atualizados
+- **Antes disso (0.1.0) — tudo implementado e testado:**
   1. ✅ Reorganização: `Modelo Teste 01` deletado; `Modelo Teste 02` →
      **`Modelo Base`** (congelado p/ sempre); **`Modelo MK 1`** criado como
      cópia e é a versão ativa (CI compila ele)
@@ -27,8 +45,8 @@ Atualizado em: 14/11/2026
      usuário — a config de emuladores do Playnite não tem pasta de ROM)
   5. ✅ Versão **0.1.0** em ambos os `extension.yaml` + `UserAgent`
      `BibliotecaRA/0.1.0`; docs (Notas/README/PLANO/ESTADO) atualizados
-- **`.pext` 0.1.0 gerado** em
-  `Modelo MK 1\BibliotecaRA_46ec2715-329d-4e68-98ca-a35b7259cc5a_0_1_0.pext`
+- **`.pext` 0.1.1 gerada** em
+  `Modelo MK 1\BibliotecaRA_46ec2715-329d-4e68-98ca-a35b7259cc5a_0_1_1.pext`
 - Build Release sem erros (só aviso NU1903 do Newtonsoft 10.0.3, pinado
   de propósito pela versão do Playnite)
 - Repo `biblioteca-ra-playnite` no GitHub: push automático ativo
@@ -37,11 +55,12 @@ Atualizado em: 14/11/2026
 - **Release oficial** (`manifests/installer.yaml`, tag, `gh release`)
   continua só a pedido do usuário
 
-## Como funciona a sincronização de atividade (0.1.0)
+## Como funciona a sincronização de atividade (0.1.1)
 
 - **Automática**: `OnLibraryUpdated` dispara após a atualização da
   biblioteca do Playnite → roda em `Task.Run` (não bloqueia), com trava
-  anti-reentrada; loga o resultado; notificação só se algo mudou ou falhou
+  anti-reentrada; loga o resultado; notificação só se algo mudou ou se
+  parou no rate limit (informativa, não é erro)
 - **Manual**: botão "Forçar atualização da biblioteca" refaz tudo com
   força total (status visível na tela de configurações)
 - **Dados**: `API_GetUserRecentlyPlayedGames` (paginado 50, UTC → local)
@@ -49,6 +68,11 @@ Atualizado em: 14/11/2026
   `Playtime` (segundos) — só consulta jogo novo ou cuja última vez jogado
   avançou desde a consulta; fallback grátis: `MostRecentAwardedDate` do
   cache da biblioteca da conta
+- **Rate limit (429)**: taxa base 1 req/s; em 429 espera 15s/60s/180s
+  (ou o `Retry-After` do servidor), com cooldown global; a taxa dobra até
+  10s e volta devagar após 5 min sem 429. Se estourar após as tentativas,
+  o sync de tempo para graciosamente com o cache parcial (não vira erro);
+  a próxima sync retoma só o que faltou
 - **Janela de frescor**: cache de atividade vale 10 min (força total
   ignora); caches de tempo gravam a cada 10 consultas (cancelar não perde)
 
@@ -87,12 +111,14 @@ O usuário pediu para lembrar — não implementar ainda:
 
 ## Próximo passo
 
-- Usuário instalar o `.pext` 0.1.0 do `Modelo MK 1`
+- Usuário instalar o `.pext` 0.1.1 do `Modelo MK 1`
   (**Configurações → Add-ons → Instalar do arquivo**) e testar:
-  - atualizar biblioteca → conferir `LastActivity`/`Playtime`/`PlayCount`
-    em alguns jogos conhecidos (1ª sync de tempo leva ~2–4 min/500 jogos)
-  - botão **Importar pastas dos jogos** nas configurações
-  - novo ícone do RA na lista de addons
+  - atualizar biblioteca → o tempo de jogo deve importar **sem o erro 429**
+    (1ª sync de tempo agora é mais lenta: ≈1 req/s, ~8–9 min/500 jogos);
+    se ainda bater limite, a notificação é informativa e a próxima sync
+    continua de onde parou
+  - conferir `LastActivity`/`Playtime`/`PlayCount` em jogos conhecidos
+  - botão **Importar pastas dos jogos** e ícone do RA (se ainda não testou)
 - Na volta: registrar resultados/bugs no `Notas.md` e decidir se vira
   release oficial ou próxima versão.
 - Antes de qualquer edição: ler este arquivo, o PLANO e as REGRAS.

@@ -14,12 +14,27 @@ namespace BibliotecaRA.Services
         }
     }
 
+    public class RaRateLimitException : RaApiException
+    {
+        public RaRateLimitException(string message) : base(message)
+        {
+        }
+    }
+
     public class ApiClient : IDisposable
     {
         public const string BaseUrl = "https://retroachievements.org/API/";
-        private const string UserAgent = "BibliotecaRA/0.1.0 (Playnite addon)";
-        private const int MinIntervalMs = 250;
+        private const string UserAgent = "BibliotecaRA/0.1.1 (Playnite addon)";
+        private const int BaseMinIntervalMs = 1000;
+        private const int MaxIntervalMs = 10000;
         private const int MaxRetries = 3;
+        private static readonly TimeSpan RateLimitDecay = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan[] RateLimitBackoff =
+        {
+            TimeSpan.FromSeconds(15),
+            TimeSpan.FromSeconds(60),
+            TimeSpan.FromSeconds(180)
+        };
 
         private static readonly HttpClient http = new HttpClient
         {
@@ -29,6 +44,9 @@ namespace BibliotecaRA.Services
         private readonly Func<RaSettings> getSettings;
         private readonly SemaphoreSlim gate = new SemaphoreSlim(1, 1);
         private DateTime lastRequestUtc = DateTime.MinValue;
+        private DateTime cooldownUntilUtc = DateTime.MinValue;
+        private DateTime lastRateLimitUtc = DateTime.MinValue;
+        private int minIntervalMs = BaseMinIntervalMs;
 
         public ApiClient(Func<RaSettings> getSettings)
         {
@@ -68,8 +86,23 @@ namespace BibliotecaRA.Services
                         {
                             var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                            if ((int)response.StatusCode == 429 ||
-                                (int)response.StatusCode >= 500)
+                            if ((int)response.StatusCode == 429)
+                            {
+                                var delay = GetRateLimitDelay(attempt, response);
+                                RegisterRateLimit(delay);
+
+                                if (attempt < MaxRetries - 1)
+                                {
+                                    await Task.Delay(delay, ct).ConfigureAwait(false);
+                                    continue;
+                                }
+
+                                throw new RaRateLimitException(
+                                    "O RetroAchievements respondeu 429 (limite de requisições) após várias tentativas. " +
+                                    "Tente novamente mais tarde — a próxima sincronização continua de onde parou.");
+                            }
+
+                            if ((int)response.StatusCode >= 500)
                             {
                                 if (attempt < MaxRetries - 1)
                                 {
@@ -166,8 +199,24 @@ namespace BibliotecaRA.Services
             await gate.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                var elapsed = DateTime.UtcNow - lastRequestUtc;
-                var wait = TimeSpan.FromMilliseconds(MinIntervalMs) - elapsed;
+                var now = DateTime.UtcNow;
+
+                // Volta devagar para a taxa base depois de um período sem 429.
+                if (minIntervalMs > BaseMinIntervalMs &&
+                    now - lastRateLimitUtc > RateLimitDecay)
+                {
+                    minIntervalMs = Math.Max(BaseMinIntervalMs, minIntervalMs / 2);
+                    lastRateLimitUtc = now;
+                }
+
+                if (cooldownUntilUtc > now)
+                {
+                    await Task.Delay(cooldownUntilUtc - now, ct).ConfigureAwait(false);
+                    now = DateTime.UtcNow;
+                }
+
+                var elapsed = now - lastRequestUtc;
+                var wait = TimeSpan.FromMilliseconds(minIntervalMs) - elapsed;
                 if (wait > TimeSpan.Zero)
                 {
                     await Task.Delay(wait, ct).ConfigureAwait(false);
@@ -179,6 +228,41 @@ namespace BibliotecaRA.Services
             {
                 gate.Release();
             }
+        }
+
+        private static TimeSpan GetRateLimitDelay(int attempt, HttpResponseMessage response)
+        {
+            // Se o servidor informar quanto esperar, ele manda.
+            var retryAfter = response.Headers.RetryAfter;
+            if (retryAfter?.Delta is TimeSpan delta && delta > TimeSpan.Zero)
+            {
+                return delta;
+            }
+
+            if (retryAfter?.Date is DateTimeOffset date)
+            {
+                var until = date - DateTimeOffset.UtcNow;
+                if (until > TimeSpan.Zero)
+                {
+                    return until;
+                }
+            }
+
+            var index = Math.Min(attempt, RateLimitBackoff.Length - 1);
+            return RateLimitBackoff[index];
+        }
+
+        private void RegisterRateLimit(TimeSpan delay)
+        {
+            var now = DateTime.UtcNow;
+            if (now + delay > cooldownUntilUtc)
+            {
+                cooldownUntilUtc = now + delay;
+            }
+
+            // Cooldown global: dobra a taxa mínima até voltar ao normal.
+            minIntervalMs = Math.Min(minIntervalMs * 2, MaxIntervalMs);
+            lastRateLimitUtc = now;
         }
 
         public void Dispose()

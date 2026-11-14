@@ -250,7 +250,15 @@ namespace BibliotecaRA
                         var result = await RunActivitySyncAsync(
                             message => logger.Debug(message), false, cts.Token).ConfigureAwait(false);
 
-                        if (result.Synced)
+                        if (result.RateLimited)
+                        {
+                            logger.Warn("Biblioteca RA: " + result.Message);
+                            PlayniteApi.Notifications.Add(
+                                "Biblioteca RA",
+                                result.Message,
+                                NotificationType.Info);
+                        }
+                        else if (result.Synced)
                         {
                             logger.Info("Biblioteca RA: " + result.Message);
                             if (result.Changes > 0)
@@ -316,6 +324,7 @@ namespace BibliotecaRA
         internal class ActivitySyncResult
         {
             public bool Synced { get; set; }
+            public bool RateLimited { get; set; }
             public int Changes { get; set; }
             public string Message { get; set; } = string.Empty;
         }
@@ -344,17 +353,47 @@ namespace BibliotecaRA
 
             try
             {
-                var lastPlayed = await activityService
-                    .GetLastPlayedAsync(force, onProgress, ct).ConfigureAwait(false);
+                RaLastPlayedCache lastPlayed;
+                try
+                {
+                    lastPlayed = await activityService
+                        .GetLastPlayedAsync(force, onProgress, ct).ConfigureAwait(false);
+                }
+                catch (RaRateLimitException e)
+                {
+                    // Parada graciosa: nada foi aplicado ainda; o próximo sync
+                    // recomeça a leitura da atividade (é barata, poucas páginas).
+                    return new ActivitySyncResult
+                    {
+                        RateLimited = true,
+                        Message = "Atividade não sincronizada — " + e.Message
+                    };
+                }
 
+                ActivityService.PlaytimeSyncResult playtime = null;
                 if (currentSettings.SyncPlaytime)
                 {
-                    await activityService
+                    playtime = await activityService
                         .SyncPlaytimeAsync(lastPlayed, force, onProgress, ct).ConfigureAwait(false);
                 }
 
                 var counts = ApplyActivityToGames(
                     currentSettings.SyncActivity, currentSettings.SyncPlaytime);
+
+                if (playtime != null && playtime.RateLimited)
+                {
+                    return new ActivitySyncResult
+                    {
+                        Synced = true,
+                        RateLimited = true,
+                        Changes = counts.LastActivity + counts.Playtime,
+                        Message = "Atividade sincronizada, mas o tempo de jogo parou no limite do RA " +
+                                  "(" + playtime.Completed + "/" + playtime.Total + " consultas). " +
+                                  "O restante continua na próxima atualização. " +
+                                  counts.LastActivity + " mudanças de atividade e " +
+                                  counts.Playtime + " tempos aplicados."
+                    };
+                }
 
                 return new ActivitySyncResult
                 {

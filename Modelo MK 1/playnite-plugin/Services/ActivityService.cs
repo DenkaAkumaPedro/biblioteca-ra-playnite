@@ -117,7 +117,7 @@ namespace BibliotecaRA.Services
             return cache;
         }
 
-        public async Task SyncPlaytimeAsync(
+        public async Task<PlaytimeSyncResult> SyncPlaytimeAsync(
             RaLastPlayedCache lastPlayed,
             bool force,
             Action<string> onProgress,
@@ -147,6 +147,7 @@ namespace BibliotecaRA.Services
 
             var total = pending.Count;
             var index = 0;
+            var result = new PlaytimeSyncResult { Total = total };
             try
             {
                 foreach (var pair in pending)
@@ -187,6 +188,13 @@ namespace BibliotecaRA.Services
                     }
                 }
             }
+            catch (RaRateLimitException)
+            {
+                // Parada graciosa: o cache parcial fica salvo e a próxima
+                // sincronização retoma só o que faltou.
+                result.RateLimited = true;
+                result.Completed = index - 1;
+            }
             finally
             {
                 if (index > 0)
@@ -195,10 +203,29 @@ namespace BibliotecaRA.Services
                 }
             }
 
-            onProgress?.Invoke(
-                total == 0
-                    ? "Tempo de jogo: nada novo para consultar."
-                    : "Tempo de jogo: " + total + " consultas concluídas.");
+            if (result.RateLimited)
+            {
+                onProgress?.Invoke(
+                    "Tempo de jogo: limite do RA atingido em " + result.Completed +
+                    "/" + total + " — o restante continua na próxima sincronização.");
+            }
+            else
+            {
+                result.Completed = total;
+                onProgress?.Invoke(
+                    total == 0
+                        ? "Tempo de jogo: nada novo para consultar."
+                        : "Tempo de jogo: " + total + " consultas concluídas.");
+            }
+
+            return result;
+        }
+
+        public class PlaytimeSyncResult
+        {
+            public int Total { get; set; }
+            public int Completed { get; set; }
+            public bool RateLimited { get; set; }
         }
 
         public void ClearCache()

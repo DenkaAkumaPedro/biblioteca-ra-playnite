@@ -31,3 +31,12 @@ Testes da verção 0.0.2
 5- ele n possui icoe pegue o icone do RA para usar como icone do addon
    → TRATADO (Modelo MK 1): substituído pelo joystick oficial do RA (ra-joystick-square.png, 128x128, repo RAWeb) + campo IconUrl no addon.yaml apontando para o raw do GitHub (aparece no navegador de addons). Toolbox verify addon passou.
    ok
+
+
+Testes Verção 0.1.0
+
+1-não importou o tempo, o playnite ddeu uma notificação que foi: 
+"falha ao sincronizar atividade: O RetroAchiviments respondeu 429 após cárias tentativas. tente novamente mais tarde."
+Tem que verifiar se isso foi um erro no codogo ou um erro do servidor do RA
+   → TRATADO (Modelo MK 1, 0.1.1): era o **servidor do RA limitando** (429 = rate limit) — o addon pedia 4 req/s (250 ms entre elas) e o sync de tempo faz 1 req por jogo, então batia no limite e a sync morria antes de aplicar o tempo. Correções: taxa base para 1 req/s; em 429 espera 15s/60s/180s (respeitando o `Retry-After` do servidor se vier); cooldown global (toda requisição pausa); a taxa dobra a cada 429 e volta devagar ao normal. Se estourar mesmo assim, o sync de tempo **para graciosamente** com o cache parcial salvo e o restante continua na próxima sincronização — notificação informativa, não mais "falha".
+   ok
