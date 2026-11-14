@@ -36,6 +36,10 @@
                     Click="RemoveFolder_Click"
                     MinWidth="120"
                     Margin="8,0,0,0"/>
+            <Button Content="{DynamicResource LOCBibliotecaRAImportGameFolders}"
+                    Click="ImportFolders_Click"
+                    MinWidth="180"
+                    Margin="8,0,0,0"/>
         </StackPanel>
 
         <TextBlock Text="{DynamicResource LOCBibliotecaRAExtensionsLabel}"
@@ -48,6 +52,19 @@
 
         <CheckBox Content="{DynamicResource LOCBibliotecaRADetectLabel}"
                   IsChecked="{Binding Settings.DetectInstalled}"/>
+
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAActivitySectionLabel}"
+                   FontWeight="Bold"
+                   Margin="0,12,0,4"/>
+        <CheckBox Content="{DynamicResource LOCBibliotecaRASyncActivityLabel}"
+                  IsChecked="{Binding Settings.SyncActivity}"/>
+        <CheckBox Content="{DynamicResource LOCBibliotecaRASyncPlaytimeLabel}"
+                  IsChecked="{Binding Settings.SyncPlaytime}"
+                  Margin="0,4,0,0"/>
+        <TextBlock Text="{DynamicResource LOCBibliotecaRAActivityHelp}"
+                   TextWrapping="Wrap"
+                   Foreground="Gray"
+                   Margin="0,4,0,0"/>
 
         <TextBlock Text="{DynamicResource LOCBibliotecaRACacheLabel}"
                    FontWeight="Bold"

@@ -10,9 +10,14 @@
     <sys:String x:Key="LOCBibliotecaRAFoldersLabel">ROM folders to scan:</sys:String>
     <sys:String x:Key="LOCBibliotecaRAAddFolder">Add folder</sys:String>
     <sys:String x:Key="LOCBibliotecaRARemoveFolder">Remove folder</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAImportGameFolders">Import game folders</sys:String>
     <sys:String x:Key="LOCBibliotecaRAExtensionsLabel">File extensions to check:</sys:String>
     <sys:String x:Key="LOCBibliotecaRAExtensionsTooltip">Comma-separated list, with or without leading dot. Leave empty to check every file.</sys:String>
     <sys:String x:Key="LOCBibliotecaRADetectLabel">Detect installed ROMs by MD5 hash</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAActivitySectionLabel">Activity and playtime:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRASyncActivityLabel">Sync last played (LastActivity)</sys:String>
+    <sys:String x:Key="LOCBibliotecaRASyncPlaytimeLabel">Sync playtime</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAActivityHelp">On every library update, reads from RetroAchievements when you last played (only moves forward) and the total playtime per game. On the 1st sync playtime queries 1 request per game (~2–4 min for 500 games); later only new games or ones you played since the last sync. Applied playtime only increases: max(local, RA).</sys:String>
     <sys:String x:Key="LOCBibliotecaRACacheLabel">Cache lifetime:</sys:String>
     <sys:String x:Key="LOCBibliotecaRACacheUnit">hours (re-downloaded after this period)</sys:String>
     <sys:String x:Key="LOCBibliotecaRATestButton">Test connection</sys:String>

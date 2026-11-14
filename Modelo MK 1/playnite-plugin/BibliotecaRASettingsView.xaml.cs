@@ -23,6 +23,11 @@ namespace BibliotecaRA
             ViewModel?.RemoveFolder(selected);
         }
 
+        private void ImportFolders_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel?.ImportGameFolders();
+        }
+
         private void Test_Click(object sender, RoutedEventArgs e)
         {
             ViewModel?.TestConnection();

@@ -12,6 +12,8 @@ namespace BibliotecaRA.Models
             ".md, .bin, .gen, .nes, .fds, .sfc, .smc, .gba, .gb, .gbc, .gg, .sms, .a26, .j64, .n64, .z64, .v64, .iso, .cue, .chd, .pbp, .cso, .7z, .zip";
         private int cacheTtlHours = 168;
         private bool detectInstalled = true;
+        private bool syncActivity = true;
+        private bool syncPlaytime = true;
 
         public string ApiKey
         {
@@ -47,6 +49,18 @@ namespace BibliotecaRA.Models
         {
             get => detectInstalled;
             set => SetValue(ref detectInstalled, value);
+        }
+
+        public bool SyncActivity
+        {
+            get => syncActivity;
+            set => SetValue(ref syncActivity, value);
+        }
+
+        public bool SyncPlaytime
+        {
+            get => syncPlaytime;
+            set => SetValue(ref syncPlaytime, value);
         }
     }
 }

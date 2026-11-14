@@ -6,6 +6,7 @@ using System.Threading;
 using BibliotecaRA.Models;
 using Playnite.SDK;
 using Playnite.SDK.Data;
+using Playnite.SDK.Models;
 
 namespace BibliotecaRA
 {
@@ -111,6 +112,75 @@ namespace BibliotecaRA
             {
                 Folders.Add(folder);
             }
+        }
+
+        public void ImportGameFolders()
+        {
+            var added = 0;
+            var already = 0;
+            var seen = new HashSet<string>(Folders, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var game in plugin.PlayniteApi.Database.Games)
+            {
+                var paths = new List<string>();
+
+                if (game.Roms != null)
+                {
+                    foreach (var rom in game.Roms)
+                    {
+                        if (!string.IsNullOrWhiteSpace(rom.Path))
+                        {
+                            paths.Add(rom.Path);
+                        }
+                    }
+                }
+
+                if (game.GameActions != null)
+                {
+                    foreach (var action in game.GameActions)
+                    {
+                        // Só Type.File (a ROM/arquivo jogável); ações de emulador
+                        // apontam para o executável, não para a pasta de ROMs.
+                        if (action.Type == GameActionType.File &&
+                            !string.IsNullOrWhiteSpace(action.Path))
+                        {
+                            paths.Add(action.Path);
+                        }
+                    }
+                }
+
+                foreach (var path in paths)
+                {
+                    try
+                    {
+                        var directory = System.IO.Path.GetDirectoryName(path);
+                        if (string.IsNullOrWhiteSpace(directory) ||
+                            !System.IO.Directory.Exists(directory))
+                        {
+                            continue;
+                        }
+
+                        if (!seen.Add(directory))
+                        {
+                            already++;
+                            continue;
+                        }
+
+                        Folders.Add(directory);
+                        added++;
+                    }
+                    catch (ArgumentException)
+                    {
+                        // Caminho com caracteres inválidos; ignora.
+                    }
+                }
+            }
+
+            StatusText = added > 0
+                ? " " + added + " pastas importadas dos jogos do Playnite" +
+                  (already > 0 ? " (" + already + " já estavam na lista)." : ".")
+                : "Nenhuma pasta nova encontrada nos jogos do Playnite" +
+                  (already > 0 ? " (" + already + " já na lista)." : ".");
         }
 
         public void RemoveFolder(string folder)

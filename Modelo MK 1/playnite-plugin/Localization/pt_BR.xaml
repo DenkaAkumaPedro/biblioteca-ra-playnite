@@ -10,9 +10,14 @@
     <sys:String x:Key="LOCBibliotecaRAFoldersLabel">Pastas de ROM para varrer:</sys:String>
     <sys:String x:Key="LOCBibliotecaRAAddFolder">Adicionar pasta</sys:String>
     <sys:String x:Key="LOCBibliotecaRARemoveFolder">Remover pasta</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAImportGameFolders">Importar pastas dos jogos</sys:String>
     <sys:String x:Key="LOCBibliotecaRAExtensionsLabel">Extensões de arquivo a verificar:</sys:String>
     <sys:String x:Key="LOCBibliotecaRAExtensionsTooltip">Lista separada por vírgulas, com ou sem ponto. Deixe vazio para verificar todos os arquivos.</sys:String>
     <sys:String x:Key="LOCBibliotecaRADetectLabel">Detectar ROMs instaladas por hash MD5</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAActivitySectionLabel">Atividade e tempo de jogo:</sys:String>
+    <sys:String x:Key="LOCBibliotecaRASyncActivityLabel">Sincronizar última vez jogado (LastActivity)</sys:String>
+    <sys:String x:Key="LOCBibliotecaRASyncPlaytimeLabel">Sincronizar tempo de jogo</sys:String>
+    <sys:String x:Key="LOCBibliotecaRAActivityHelp">A cada atualização de biblioteca, lê do RetroAchievements a última vez que você jogou (só avança, nunca retrocede) e o tempo total por jogo. Na 1ª vez o tempo consulta 1 requisição por jogo (≈2–4 min para 500 jogos); depois só busca jogos novos ou que você jogou desde a última sincronização. O tempo aplicado só sobe: max(tempo local, tempo do RA).</sys:String>
     <sys:String x:Key="LOCBibliotecaRACacheLabel">Validade do cache:</sys:String>
     <sys:String x:Key="LOCBibliotecaRACacheUnit">horas (baixado de novo após esse período)</sys:String>
     <sys:String x:Key="LOCBibliotecaRATestButton">Testar conexão</sys:String>
