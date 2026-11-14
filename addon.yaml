@@ -1,6 +1,7 @@
 AddonId: BibliotecaRA_46ec2715-329d-4e68-98ca-a35b7259cc5a
 Type: GameLibrary
 InstallerManifestUrl: https://raw.githubusercontent.com/DenkaAkumaPedro/biblioteca-ra-playnite/master/manifests/installer.yaml
+IconUrl: https://raw.githubusercontent.com/DenkaAkumaPedro/biblioteca-ra-playnite/master/Modelo%20MK%201/playnite-plugin/icon.png
 ShortDescription: Importa o catálogo do RetroAchievements para a biblioteca do Playnite.
 Name: Biblioteca RA
 Author: DenkaAkumaPedro
