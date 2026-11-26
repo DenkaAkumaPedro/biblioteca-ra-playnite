@@ -24,7 +24,7 @@ namespace BibliotecaRA.Services
     public class ApiClient : IDisposable
     {
         public const string BaseUrl = "https://retroachievements.org/API/";
-        private const string UserAgent = "BibliotecaRA/0.1.1 (Playnite addon)";
+        private const string UserAgent = "BibliotecaRA/0.1.2 (Playnite addon)";
         private const int BaseMinIntervalMs = 1000;
         private const int MaxIntervalMs = 10000;
         private const int MaxRetries = 3;

@@ -4,8 +4,8 @@ Addon para o **Playnite** que importa o catálogo do
 [RetroAchievements](https://retroachievements.org) para a biblioteca do
 usuário, detectando quais ROMs você já tem no PC por hash MD5.
 
-> **Versão: 0.1.1** — importação + atividade/tempo de jogo, com
-> tratamento de rate limit do RA (429). Veja
+> **Versão: 0.1.2** — importação + atividade/tempo de jogo, com
+> tratamento de rate limit do RA (429) e sessões no GameActivity. Veja
 > [PLANO.md](PLANO.md) para o escopo completo e [REGRAS.md](REGRAS.md) para
 > as regras de operação deste projeto.
 
@@ -26,6 +26,9 @@ usuário, detectando quais ROMs você já tem no PC por hash MD5.
   - `LastActivity` = última vez jogado no RA (só avança, nunca retrocede)
   - `PlayCount` = 1 quando há atividade no RA e estava zerado
   - `Playtime` = **max(tempo local, tempo do RA)** — só sobe, nunca diminui
+  - **Sessão no GameActivity** (checkbox, padrão ligado): grava 1 sessão por
+    jogo com o tempo do RA no plugin GameActivity — sem isso o GA ignora o
+    `Playtime` do Playnite e não mostra o tempo nas estatísticas dele
 - Cache local com validade configurável (a API do RA exige cache agressivo)
 - Web API Key e usuário guardados só nas configurações locais (`ExtensionsData`)
 - Ícone oficial do RetroAchievements (joystick do repo RAWeb)
@@ -51,7 +54,10 @@ usuário, detectando quais ROMs você já tem no PC por hash MD5.
    ROMs/ação de arquivo dos jogos já vinculados no Playnite)
 5. Ajuste as **extensões de arquivo** se quiser (padrão cobre os formats
    comuns de retro)
-6. Confira os checkboxes de **atividade e tempo de jogo** (padrão ligado)
+6. Confira os checkboxes de **atividade e tempo de jogo** (padrão ligado),
+   incluindo **Gravar sessão no GameActivity** (precisa do plugin
+   [GameActivity](https://github.com/Lacro59/playnite-gameactivity-plugin)
+   instalado para aparecer lá)
 7. Clique em **Testar conexão** para confirmar chave e usuário
 8. Volte à biblioteca e use **Atualizar biblioteca** do Playnite — os jogos
    da sua conta serão baixados e cacheados na primeira vez, e a atividade
@@ -142,6 +148,13 @@ dotnet build "Modelo MK 1/playnite-plugin/BibliotecaRA.slnx" -c Release
   de onde parou (notificação informativa, não é falha)
 - **Atividade**: a data do RA vem em UTC e é convertida para o fuso local;
   `LastActivity` só avança (nunca retrocede), `PlayCount` só vira 1
+- **GameActivity**: o plugin GameActivity ignora o campo `Playtime` do
+  Playnite nas estatísticas dele (só soma as sessões próprias). Com a
+  checkbox ligada, o addon grava 1 sessão por jogo com o tempo do RA
+  (upsert por `SourceID` fixo — sync repetida não infla tempo). Sem o
+  GameActivity instalado, a sincronização segue e só avisa no log. Sessões
+  de jogos lançados pelo Playnite são contadas à parte pelo GA (mesma
+  limitação dos outros addons)
 - A sincronização automática de atividade roda em segundo plano a cada
   atualização de biblioteca (resultado no log; notificação só quando algo
   mudou ou falha)

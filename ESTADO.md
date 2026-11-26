@@ -1,6 +1,6 @@
 # Estado atual do projeto
 
-Atualizado em: 14/11/2026
+Atualizado em: 25/11/2026
 
 > Arquivo de memória entre sessões. Ler este arquivo junto com `PLANO.md` e
 > `REGRAS.md` ao iniciar qualquer trabalho neste projeto. Atualizar este
@@ -8,8 +8,27 @@ Atualizado em: 14/11/2026
 
 ## Situação
 
-- **Versão 0.1.1 implementada no `Modelo MK 1`** — correção do 429 relatado
-  no teste da 0.1.0 (`Notas.md`):
+- **Versão 0.1.2 implementada no `Modelo MK 1`** — sessões no GameActivity
+  (relato do teste da 0.1.1 no `Notas.md`):
+  1. ✅ Diagnóstico: **não era bug do sync** — o plugin GameActivity ignora
+     `game.Playtime` e só soma as próprias sessões (`Items` →
+     `SessionPlaytime`); tempo importado de biblioteca nunca aparece lá
+     (issue #203 do GA)
+  2. ✅ `Services/GameActivityWriter.cs` (port do addon AniList): grava 1
+     sessão por jogo com o tempo do RA via reflexão no banco do GA
+     (`GameActivityMonitoring` → `PluginDatabase`); `SourceID` fixo próprio
+     (upsert idempotente, nunca infla tempo); `GameActionName =
+     "RetroAchievements"`; falha degrada com log se o GA não estiver
+     instalado
+  3. ✅ Setting `WriteGameActivitySessions` (padrão ligado) + checkbox
+     "Gravar sessão no GameActivity" + localização pt_BR/en_US
+  4. ✅ `BibliotecaRA.cs`: monta as sessões do cache de tempo (só
+     `Seconds > 0`, data = `LastPlayed` ou data da consulta) e chama o
+     writer **fora** do `BufferedUpdate` (banco do GA é separado); contagem
+     de sessões entra na notificação/status
+  5. ✅ Versão **0.1.2** em ambos os `extension.yaml` + `UserAgent`
+     `BibliotecaRA/0.1.2`; Notas/README/PLANO/ESTADO atualizados
+- **Antes disso (0.1.1) — correção do 429:**
   1. ✅ Causa diagnosticada: **rate limit do servidor do RA** — o addon pedia
      4 req/s (250 ms) e o sync de tempo faz 1 req/jogo; batia no limite e a
      sync morria antes de aplicar o tempo
@@ -25,28 +44,7 @@ Atualizado em: 14/11/2026
   4. ✅ `BibliotecaRA.cs`: notificação **informativa** no rate limit (não
      mais "Falha ao sincronizar atividade"); o tempo já consultado é
      aplicado mesmo na parada parcial
-  5. ✅ Versão **0.1.1** em ambos os `extension.yaml` + `UserAgent`
-     `BibliotecaRA/0.1.1`; Notas/README/ESTADO atualizados
-- **Antes disso (0.1.0) — tudo implementado e testado:**
-  1. ✅ Reorganização: `Modelo Teste 01` deletado; `Modelo Teste 02` →
-     **`Modelo Base`** (congelado p/ sempre); **`Modelo MK 1`** criado como
-     cópia e é a versão ativa (CI compila ele)
-  2. ✅ Ícone: joystick oficial do RA (`ra-joystick-square.png` 128×128 do
-     repo RAWeb) + `IconUrl` no `addon.yaml`; `Toolbox verify addon` passou
-  3. ✅ Atividade (itens 2+3 do Notas): `ActivityService` com caches
-     `activity_lastplayed.json` e `activity_playtime.json`; escrita no
-     `OnLibraryUpdated` (padrão AniList: `BufferedUpdate` + `Games.Update`,
-     trava `SemaphoreSlim`, lock `Wait(0)`); `LastActivity` só avança;
-     `PlayCount` = 1; `Playtime` = **max(local, RA)**; checkboxes
-     `SyncActivity`/`SyncPlaytime` (padrão ligado); progresso no status/log
-     com gravação incremental do cache de tempo
-  4. ✅ Pastas (item 4): botão **"Importar pastas dos jogos"** coleta
-     diretórios de `Game.Roms[].Path` + `GameActions` Type File (decisão do
-     usuário — a config de emuladores do Playnite não tem pasta de ROM)
-  5. ✅ Versão **0.1.0** em ambos os `extension.yaml` + `UserAgent`
-     `BibliotecaRA/0.1.0`; docs (Notas/README/PLANO/ESTADO) atualizados
-- **`.pext` 0.1.1 gerada** em
-  `Modelo MK 1\BibliotecaRA_46ec2715-329d-4e68-98ca-a35b7259cc5a_0_1_1.pext`
+- **`.pext` 0.1.1** ainda disponível; **0.1.2** sai no build desta leva
 - Build Release sem erros (só aviso NU1903 do Newtonsoft 10.0.3, pinado
   de propósito pela versão do Playnite)
 - Repo `biblioteca-ra-playnite` no GitHub: push automático ativo
@@ -55,7 +53,7 @@ Atualizado em: 14/11/2026
 - **Release oficial** (`manifests/installer.yaml`, tag, `gh release`)
   continua só a pedido do usuário
 
-## Como funciona a sincronização de atividade (0.1.1)
+## Como funciona a sincronização de atividade (0.1.2)
 
 - **Automática**: `OnLibraryUpdated` dispara após a atualização da
   biblioteca do Playnite → roda em `Task.Run` (não bloqueia), com trava
@@ -68,6 +66,11 @@ Atualizado em: 14/11/2026
   `Playtime` (segundos) — só consulta jogo novo ou cuja última vez jogado
   avançou desde a consulta; fallback grátis: `MostRecentAwardedDate` do
   cache da biblioteca da conta
+- **Sessões no GameActivity**: se a checkbox "Gravar sessão no GameActivity"
+  estiver ligada (padrão), após aplicar o tempo o addon grava 1 sessão por
+  jogo no banco do plugin GameActivity (tempo do RA, data = última vez
+  jogado). Upsert por `SourceID` fixo — rodar a sync N vezes não infla
+  tempo. Sem o GA instalado, só avisa no log e segue
 - **Rate limit (429)**: taxa base 1 req/s; em 429 espera 15s/60s/180s
   (ou o `Retry-After` do servidor), com cooldown global; a taxa dobra até
   10s e volta devagar após 5 min sem 429. Se estourar após as tentativas,
@@ -83,8 +86,10 @@ O usuário pediu para lembrar — não implementar ainda:
 - **Progresso visível na UI** durante o sync do `GetGames` (hoje só log)
 - **Cache parcial retomável** do download do `GetGames` (atividade/tempo
   **já** grava incremental)
-- **Sessões no plugin GameActivity** (padrão do addon AniList) — usuário
-  optou por deixar para versão futura
+- **Correções B1/B2/B5 do sync** (investigação 0.1.1): apply não roda em
+  erro/cancelamento antes dele; resposta `[]` envenena cache com
+  `Seconds=0`; um jogo com erro derruba o apply inteiro
+- ~~Sessões no plugin GameActivity~~ — **implementado na 0.1.2**
 
 ## Regra de versionamento de `.pext`
 
@@ -111,14 +116,15 @@ O usuário pediu para lembrar — não implementar ainda:
 
 ## Próximo passo
 
-- Usuário instalar o `.pext` 0.1.1 do `Modelo MK 1`
+- Usuário instalar o `.pext` 0.1.2 do `Modelo MK 1`
   (**Configurações → Add-ons → Instalar do arquivo**) e testar:
-  - atualizar biblioteca → o tempo de jogo deve importar **sem o erro 429**
-    (1ª sync de tempo agora é mais lenta: ≈1 req/s, ~8–9 min/500 jogos);
-    se ainda bater limite, a notificação é informativa e a próxima sync
-    continua de onde parou
-  - conferir `LastActivity`/`Playtime`/`PlayCount` em jogos conhecidos
-  - botão **Importar pastas dos jogos** e ícone do RA (se ainda não testou)
+  - atualizar biblioteca → verificar notificação com "**N sessões no
+    GameActivity**" e conferir o tempo no plugin GameActivity (jogos com
+    sessão do RA aparecem na lista/gráficos dele)
+  - conferir `LastActivity`/`Playtime`/`PlayCount` nos detalhes do jogo no
+    Playnite (campo "Tempo de jogo")
+  - se o GameActivity não estiver instalado: só aviso no log, sem erro
 - Na volta: registrar resultados/bugs no `Notas.md` e decidir se vira
-  release oficial ou próxima versão.
+  release oficial ou próxima versão (eventuais correções B1/B2/B5 do sync
+  ficam para a próxima).
 - Antes de qualquer edição: ler este arquivo, o PLANO e as REGRAS.

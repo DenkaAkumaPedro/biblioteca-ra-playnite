@@ -380,29 +380,40 @@ namespace BibliotecaRA
                 var counts = ApplyActivityToGames(
                     currentSettings.SyncActivity, currentSettings.SyncPlaytime);
 
+                var sessionsWritten = 0;
+                if (currentSettings.SyncPlaytime && currentSettings.WriteGameActivitySessions)
+                {
+                    // Fora do BufferedUpdate: o GameActivity tem o proprio banco e nao
+                    // deve participar da transacao do Playnite.
+                    sessionsWritten = WriteGameActivitySessions(
+                        activityService.LoadPlaytime(), activityService.LoadLastPlayed());
+                }
+
                 if (playtime != null && playtime.RateLimited)
                 {
                     return new ActivitySyncResult
                     {
                         Synced = true,
                         RateLimited = true,
-                        Changes = counts.LastActivity + counts.Playtime,
+                        Changes = counts.LastActivity + counts.Playtime + sessionsWritten,
                         Message = "Atividade sincronizada, mas o tempo de jogo parou no limite do RA " +
                                   "(" + playtime.Completed + "/" + playtime.Total + " consultas). " +
                                   "O restante continua na próxima atualização. " +
-                                  counts.LastActivity + " mudanças de atividade e " +
-                                  counts.Playtime + " tempos aplicados."
+                                  counts.LastActivity + " mudanças de atividade, " +
+                                  counts.Playtime + " tempos aplicados e " +
+                                  sessionsWritten + " sessões no GameActivity."
                     };
                 }
 
                 return new ActivitySyncResult
                 {
                     Synced = true,
-                    Changes = counts.LastActivity + counts.Playtime,
+                    Changes = counts.LastActivity + counts.Playtime + sessionsWritten,
                     Message = "Atividade sincronizada: " + lastPlayed.Games.Count +
                               " jogos com última vez jogado no RA; " +
-                              counts.LastActivity + " mudanças de atividade e " +
-                              counts.Playtime + " tempos atualizados."
+                              counts.LastActivity + " mudanças de atividade, " +
+                              counts.Playtime + " tempos atualizados e " +
+                              sessionsWritten + " sessões no GameActivity."
                 };
             }
             finally
@@ -511,6 +522,55 @@ namespace BibliotecaRA
             }
 
             return counts;
+        }
+
+        private int WriteGameActivitySessions(
+            RaPlaytimeCache playtime, RaLastPlayedCache lastPlayed)
+        {
+            if (playtime == null || playtime.Games.Count == 0)
+            {
+                return 0;
+            }
+
+            var sessions = new List<PendingSession>();
+            foreach (var game in PlayniteApi.Database.Games)
+            {
+                if (game.PluginId != Id || string.IsNullOrEmpty(game.GameId))
+                {
+                    continue;
+                }
+
+                if (!playtime.Games.TryGetValue(game.GameId, out var entry) || entry.Seconds <= 0)
+                {
+                    continue;
+                }
+
+                // Data da sessao = ultima vez jogado no RA (ou a data da consulta,
+                // se o jogo nao aparecer na lista de recentes).
+                var date = DateTime.UtcNow;
+                if (lastPlayed != null && lastPlayed.Games.TryGetValue(game.GameId, out var lastPlayedUtc))
+                {
+                    date = lastPlayedUtc;
+                }
+                else if (entry.FetchedAtUtc != default)
+                {
+                    date = entry.FetchedAtUtc;
+                }
+
+                sessions.Add(new PendingSession
+                {
+                    GameId = game.Id,
+                    Seconds = entry.Seconds,
+                    Date = date
+                });
+            }
+
+            if (sessions.Count == 0)
+            {
+                return 0;
+            }
+
+            return GameActivityWriter.WriteSessions(PlayniteApi, sessions, logger);
         }
     }
 }

@@ -14,6 +14,7 @@ namespace BibliotecaRA.Models
         private bool detectInstalled = true;
         private bool syncActivity = true;
         private bool syncPlaytime = true;
+        private bool writeGameActivitySessions = true;
 
         public string ApiKey
         {
@@ -61,6 +62,12 @@ namespace BibliotecaRA.Models
         {
             get => syncPlaytime;
             set => SetValue(ref syncPlaytime, value);
+        }
+
+        public bool WriteGameActivitySessions
+        {
+            get => writeGameActivitySessions;
+            set => SetValue(ref writeGameActivitySessions, value);
         }
     }
 }

@@ -40,3 +40,13 @@ Testes Verção 0.1.0
 Tem que verifiar se isso foi um erro no codogo ou um erro do servidor do RA
    → TRATADO (Modelo MK 1, 0.1.1): era o **servidor do RA limitando** (429 = rate limit) — o addon pedia 4 req/s (250 ms entre elas) e o sync de tempo faz 1 req por jogo, então batia no limite e a sync morria antes de aplicar o tempo. Correções: taxa base para 1 req/s; em 429 espera 15s/60s/180s (respeitando o `Retry-After` do servidor se vier); cooldown global (toda requisição pausa); a taxa dobra a cada 429 e volta devagar ao normal. Se estourar mesmo assim, o sync de tempo **para graciosamente** com o cache parcial salvo e o restante continua na próxima sincronização — notificação informativa, não mais "falha".
    ok
+
+
+Testes Verção 0.1.1
+
+1- parece que o tempo não esta sendo lançado no tempo de atividade (GameActivity). não sei qual pode ser o motivo
+   → TRATADO (Modelo MK 1, 0.1.2): não era bug do sync — o plugin GameActivity ignora o campo Playtime do Playnite e só soma as **próprias sessões** (issue #203 dele). Implementado o padrão do addon AniList: nova checkbox "Gravar sessão no GameActivity" (padrão ligado) que grava 1 sessão por jogo com o tempo do RA (SourceID fixo, upsert idempotente, via reflexão — sem referenciar a DLL do GA). Se o GameActivity não estiver instalado, a sync continua e só avisa no log. Conferir também o campo "Tempo de jogo" nos detalhes do jogo no Playnite (esse já era gravado desde a 0.1.0).
+   ok
+
+2- de resto não testei, mas prefiro resolver isso antes e depois ver as outras coisas
+   ok (pendente dos testes da 0.1.2)

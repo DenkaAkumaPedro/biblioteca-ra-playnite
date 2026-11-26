@@ -15,7 +15,7 @@ para a biblioteca do usuário.
 | 2 | Metadados | Nome, plataforma, ícone, capa, gênero, desenvolvedora, editora, ano, links |
 | 3 | Detectar instalados | Casar os hashes MD5 do RA com os arquivos de ROM presentes no PC do usuário |
 | 4 | Configuração | Campo para a Web API Key, **usuário do RA**, pastas de ROM a varrer, botões de ação |
-| 5 | Atividade e tempo de jogo | `LastActivity` (última vez jogado, só avança), `PlayCount` (= 1 com atividade) e `Playtime` = **max(local, RA)** por jogo; escrita no `OnLibraryUpdated` com caches próprios (`activity_*.json`); checkboxes de sync |
+| 5 | Atividade e tempo de jogo | `LastActivity` (última vez jogado, só avança), `PlayCount` (= 1 com atividade) e `Playtime` = **max(local, RA)** por jogo; escrita no `OnLibraryUpdated` com caches próprios (`activity_*.json`); checkboxes de sync; opcional: **1 sessão por jogo no plugin GameActivity** (padrão do addon AniList, via reflexão — o GA ignora `Playtime` do Playnite e só soma as sessões próprias) |
 | 6 | Pastas dos jogos | Botão "Importar pastas dos jogos": coleta diretórios de `Game.Roms[].Path` + `GameActions` Type File dos jogos do Playnite para a lista de pastas |
 
 ### Fora do escopo (backlog para depois)
