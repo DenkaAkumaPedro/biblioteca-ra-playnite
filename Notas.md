@@ -50,3 +50,21 @@ Testes Verção 0.1.1
 
 2- de resto não testei, mas prefiro resolver isso antes e depois ver as outras coisas
    ok (pendente dos testes da 0.1.2)
+
+Testes Verção 0.1.2
+
+1- ele esta sempre subistituindo o tempo para a data mais recente, queria que o tempo fosse adicionado. exemplo: se joguei 3h no dia 1/1/2026 e depois jogace mais 2h no dia 2/1/2026 quero que tenha 2 sessoes de tempo de 3h e 2h em vez do que ta fazendo agora que é uma sessão de 5h no dia 2/1/2026
+(como aconte no adon do anilist)
+   → TRATADO (Modelo MK 1, 0.1.3): era o upsert — apagava as sessões próprias
+   (SourceID fixo) e recriava uma só com o total, sempre na data mais
+   recente. Agora a escrita é **incremental**: soma as sessões da extensão
+   já gravadas no GameActivity (vira a baseline) e anexa uma sessão nova só
+   com o tempo jogado desde a última sync, datada na última vez jogado no RA;
+   as sessões antigas ficam no lugar e sync sem jogo novo não grava nada. A
+   sessão única gravada pela 0.1.2 vira a base do delta, então não há
+   contagem em dobro na primeira sync com a 0.1.3. Limite: a API do RA não
+   expõe histórico por sessão/dia, então jogadas feitas entre duas
+   sincronizações viram uma sessão só e o histórico antigo não é dividido
+   (o que dá pra datar corretamente é o tempo novo a partir de agora).
+   ok
+

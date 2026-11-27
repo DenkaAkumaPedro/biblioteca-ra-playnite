@@ -11,8 +11,11 @@ namespace BibliotecaRA.Services
     {
         public Guid GameId { get; set; }
 
-        public long Seconds { get; set; }
+        // Total acumulado no RA (nao o incremento): o delta que vira sessao nova
+        // e calculado dentro do writer, contra o que ja esta gravado no GameActivity.
+        public long TotalSeconds { get; set; }
 
+        // Data do incremento: ultima vez jogado no RA.
         public DateTime Date { get; set; }
     }
 
@@ -24,10 +27,11 @@ namespace BibliotecaRA.Services
         private const BindingFlags InstanceMembers =
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-        // Fixo de proposito: e o que torna a escrita idempotente. Cada sessao da extensao
-        // e sobrescrita no lugar, nunca anexada, entao rodar a sync dez vezes nao cria
-        // dez sessoes. Um SourceID novo por execucao transformaria o GameActivity num
-        // inflador de tempo.
+        // Fixo de proposito: e o que identifica as sessoes desta extensao dentro do
+        // GameActivity. A soma delas faz o papel de baseline — na proxima sync entra
+        // so o delta entre o total do RA e o que ja foi gravado, entao rodar a sync
+        // dez vezes nao infla o tempo e as sessoes antigas ficam no lugar (datadas
+        // no dia em que o tempo foi lançado).
         private static readonly Guid SessionSourceId = new Guid("b6e3d8a1-4c27-4f9e-9d15-2a8f0c7e6b43");
 
         private static bool warnedUnavailable;
@@ -83,7 +87,9 @@ namespace BibliotecaRA.Services
                         continue;
                     }
 
-                    if (UpsertSession(entry, itemType, session))
+                    // Só grava quando há delta: jogo sem tempo novo deixa o banco
+                    // do GameActivity intocado.
+                    if (AppendSession(entry, itemType, session))
                     {
                         addOrUpdate.Invoke(database.Database, new object[] { entry });
                         written++;
@@ -106,7 +112,7 @@ namespace BibliotecaRA.Services
             }
         }
 
-        private static bool UpsertSession(object entry, Type itemType, PendingSession session)
+        private static bool AppendSession(object entry, Type itemType, PendingSession session)
         {
             var itemsProperty = itemType.GetProperty("Items", InstanceMembers);
             var items = itemsProperty?.GetValue(entry, null) as IList;
@@ -120,44 +126,58 @@ namespace BibliotecaRA.Services
             var elapsedProperty = activityType.GetProperty("ElapsedSeconds", InstanceMembers);
             var platformIdsProperty = activityType.GetProperty("PlatformIDs", InstanceMembers);
 
-            // Remove a sessao anterior desta extensao antes de criar a nova. Sem isso o
-            // tempo viraria sessao a cada sync.
-            for (var i = items.Count - 1; i >= 0; i--)
+            // Sem SourceID/ElapsedSeconds nao da para saber o que ja foi gravado por
+            // esta extensao; gravar assim seria inflar o tempo a cada sync.
+            if (sourceProperty == null ||
+                elapsedProperty == null ||
+                elapsedProperty.PropertyType != typeof(ulong))
             {
-                var candidate = items[i];
-                var candidateSource = sourceProperty?.GetValue(candidate, null);
-                if (candidateSource is Guid candidateGuid && candidateGuid == SessionSourceId)
+                return false;
+            }
+
+            // Baseline: a soma das sessoes desta extensao ja presentes no jogo. O que
+            // falta para bater com o total do RA e o incremento desta sync. As sessoes
+            // antigas nunca sao removidas — e por isso que o tempo se acumula por data
+            // em vez de ser substituido pela mais recente.
+            long applied = 0;
+            for (var i = 0; i < items.Count; i++)
+            {
+                if (sourceProperty.GetValue(items[i], null) is Guid candidateGuid &&
+                    candidateGuid == SessionSourceId)
                 {
-                    items.RemoveAt(i);
+                    applied += (long)(ulong)elapsedProperty.GetValue(items[i], null);
                 }
             }
 
-            if (session.Seconds > 0)
+            var delta = session.TotalSeconds - applied;
+            if (session.TotalSeconds <= 0 || delta <= 0)
             {
-                var activity = Activator.CreateInstance(activityType);
-                sourceProperty?.SetValue(activity, SessionSourceId, null);
-
-                // PlatformIDs e o que amarra a sessao ao jogo do Playnite.
-                if (platformIdsProperty != null)
-                {
-                    var platformIds = (IList)Activator.CreateInstance(platformIdsProperty.PropertyType);
-                    platformIds.Add(session.GameId);
-                    platformIdsProperty.SetValue(activity, platformIds, null);
-                }
-
-                activityType.GetProperty("GameActionName", InstanceMembers)?.SetValue(activity, SessionActionName, null);
-                activityType.GetProperty("IdConfiguration", InstanceMembers)?.SetValue(activity, 0, null);
-                activityType.GetProperty("DateSession", InstanceMembers)?.SetValue(activity, session.Date, null);
-                elapsedProperty?.SetValue(activity, (ulong)session.Seconds, null);
-
-                var detailsProperty = activityType.GetProperty("Details", InstanceMembers);
-                if (detailsProperty != null)
-                {
-                    detailsProperty.SetValue(activity, Activator.CreateInstance(detailsProperty.PropertyType), null);
-                }
-
-                items.Add(activity);
+                return false;
             }
+
+            var activity = Activator.CreateInstance(activityType);
+            sourceProperty.SetValue(activity, SessionSourceId, null);
+
+            // PlatformIDs e o que amarra a sessao ao jogo do Playnite.
+            if (platformIdsProperty != null)
+            {
+                var platformIds = (IList)Activator.CreateInstance(platformIdsProperty.PropertyType);
+                platformIds.Add(session.GameId);
+                platformIdsProperty.SetValue(activity, platformIds, null);
+            }
+
+            activityType.GetProperty("GameActionName", InstanceMembers)?.SetValue(activity, SessionActionName, null);
+            activityType.GetProperty("IdConfiguration", InstanceMembers)?.SetValue(activity, 0, null);
+            activityType.GetProperty("DateSession", InstanceMembers)?.SetValue(activity, session.Date, null);
+            elapsedProperty.SetValue(activity, (ulong)delta, null);
+
+            var detailsProperty = activityType.GetProperty("Details", InstanceMembers);
+            if (detailsProperty != null)
+            {
+                detailsProperty.SetValue(activity, Activator.CreateInstance(detailsProperty.PropertyType), null);
+            }
+
+            items.Add(activity);
 
             // SessionPlaytime nao e gravado aqui: e uma propriedade calculada, que o proprio
             // GameActivity soma a partir de Items, e nao tem setter.

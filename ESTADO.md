@@ -1,6 +1,6 @@
 # Estado atual do projeto
 
-Atualizado em: 25/11/2026
+Atualizado em: 27/11/2026
 
 > Arquivo de memória entre sessões. Ler este arquivo junto com `PLANO.md` e
 > `REGRAS.md` ao iniciar qualquer trabalho neste projeto. Atualizar este
@@ -8,8 +8,25 @@ Atualizado em: 25/11/2026
 
 ## Situação
 
-- **Versão 0.1.2 implementada no `Modelo MK 1`** — sessões no GameActivity
-  (relato do teste da 0.1.1 no `Notas.md`):
+- **Versão 0.1.3 no `Modelo MK 1`** — corrige o teste da 0.1.2 (relato no
+  `Notas.md`):
+  1. ❌ Teste da 0.1.2: as sessões do GameActivity eram **substituídas** na
+     data mais recente (3h + 2h → 1 sessão de 5h) em vez de acumular
+  2. ✅ Causa: `UpsertSession` removia as sessões próprias e recriava uma só
+     com o total do RA datada no `LastPlayed`; a API do RA não expõe
+     histórico por sessão/dia (só `UserTotalPlaytime` + `LastPlayed`)
+  3. ✅ `Services/GameActivityWriter.cs`: escrita agora é **incremental** —
+     soma `ElapsedSeconds` das sessões com o `SourceID` fixo (baseline) e
+     anexa sessão nova só com o `delta = total − soma`, datada na última vez
+     jogado; sem delta não grava nada (idempotente). A sessão única gravada
+     pela 0.1.2 vira a base → primeira sync sem contagem em dobro. Guarda:
+     `SourceID`/`ElapsedSeconds` desconhecidos → não grava (evita inflar)
+  4. ✅ `BibliotecaRA.cs`: campo `PendingSession.TotalSeconds` (era
+     `Seconds`); notificação passa a contar "N sessões **novas**" no GA
+  5. ✅ Versão **0.1.3** em ambos os `extension.yaml` + `UserAgent`
+     `BibliotecaRA/0.1.3`; Notas/README/PLANO/ESTADO atualizados
+- **Antes disso (0.1.2) — sessões no GameActivity** (relato do teste da
+  0.1.1 no `Notas.md`):
   1. ✅ Diagnóstico: **não era bug do sync** — o plugin GameActivity ignora
      `game.Playtime` e só soma as próprias sessões (`Items` →
      `SessionPlaytime`); tempo importado de biblioteca nunca aparece lá
@@ -44,7 +61,7 @@ Atualizado em: 25/11/2026
   4. ✅ `BibliotecaRA.cs`: notificação **informativa** no rate limit (não
      mais "Falha ao sincronizar atividade"); o tempo já consultado é
      aplicado mesmo na parada parcial
-- **`.pext` 0.1.1** ainda disponível; **0.1.2** sai no build desta leva
+- **`.pext` 0.1.2** ainda disponível; **0.1.3** sai no build desta leva
 - Build Release sem erros (só aviso NU1903 do Newtonsoft 10.0.3, pinado
   de propósito pela versão do Playnite)
 - Repo `biblioteca-ra-playnite` no GitHub: push automático ativo
@@ -53,7 +70,7 @@ Atualizado em: 25/11/2026
 - **Release oficial** (`manifests/installer.yaml`, tag, `gh release`)
   continua só a pedido do usuário
 
-## Como funciona a sincronização de atividade (0.1.2)
+## Como funciona a sincronização de atividade (0.1.3)
 
 - **Automática**: `OnLibraryUpdated` dispara após a atualização da
   biblioteca do Playnite → roda em `Task.Run` (não bloqueia), com trava
@@ -67,10 +84,14 @@ Atualizado em: 25/11/2026
   avançou desde a consulta; fallback grátis: `MostRecentAwardedDate` do
   cache da biblioteca da conta
 - **Sessões no GameActivity**: se a checkbox "Gravar sessão no GameActivity"
-  estiver ligada (padrão), após aplicar o tempo o addon grava 1 sessão por
-  jogo no banco do plugin GameActivity (tempo do RA, data = última vez
-  jogado). Upsert por `SourceID` fixo — rodar a sync N vezes não infla
-  tempo. Sem o GA instalado, só avisa no log e segue
+  estiver ligada (padrão), após aplicar o tempo o addon grava sessões
+  **incrementais** no banco do plugin GameActivity: a soma das sessões da
+  extensão (`SourceID` fixo) é a base e cada sync anexa uma sessão nova só
+  com o delta do tempo jogado desde a anterior, datada na última vez jogado
+  no RA. Sem delta não grava nada — rodar a sync N vezes não infla tempo e
+  as sessões antigas ficam no lugar (a única gravada pela 0.1.2 vira a base).
+  Limite: jogadas entre duas syncs viram uma sessão só (a API do RA não tem
+  histórico por dia). Sem o GA instalado, só avisa no log e segue
 - **Rate limit (429)**: taxa base 1 req/s; em 429 espera 15s/60s/180s
   (ou o `Retry-After` do servidor), com cooldown global; a taxa dobra até
   10s e volta devagar após 5 min sem 429. Se estourar após as tentativas,
@@ -116,15 +137,19 @@ O usuário pediu para lembrar — não implementar ainda:
 
 ## Próximo passo
 
-- Usuário instalar o `.pext` 0.1.2 do `Modelo MK 1`
+- Usuário instalar o `.pext` 0.1.3 do `Modelo MK 1`
   (**Configurações → Add-ons → Instalar do arquivo**) e testar:
-  - atualizar biblioteca → verificar notificação com "**N sessões no
-    GameActivity**" e conferir o tempo no plugin GameActivity (jogos com
-    sessão do RA aparecem na lista/gráficos dele)
+  - jogar no RA → atualizar biblioteca → notificação com "**N sessões
+    novas no GameActivity**" e conferir no GameActivity que a sessão nova
+    entrou **ao lado** das antigas (data = última vez jogado), sem somar o
+    tempo em dobro
+  - atualizar a biblioteca 2× seguidas **sem jogar nada** → 0 sessões novas
+    e o tempo no GA não muda (idempotência)
   - conferir `LastActivity`/`Playtime`/`PlayCount` nos detalhes do jogo no
     Playnite (campo "Tempo de jogo")
   - se o GameActivity não estiver instalado: só aviso no log, sem erro
 - Na volta: registrar resultados/bugs no `Notas.md` e decidir se vira
   release oficial ou próxima versão (eventuais correções B1/B2/B5 do sync
-  ficam para a próxima).
+  ficam para a próxima; a divisão retroativa do histórico antigo por data
+  continua impossível — a API do RA não expõe).
 - Antes de qualquer edição: ler este arquivo, o PLANO e as REGRAS.

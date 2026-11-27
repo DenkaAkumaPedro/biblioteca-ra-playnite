@@ -401,7 +401,7 @@ namespace BibliotecaRA
                                   "O restante continua na próxima atualização. " +
                                   counts.LastActivity + " mudanças de atividade, " +
                                   counts.Playtime + " tempos aplicados e " +
-                                  sessionsWritten + " sessões no GameActivity."
+                                  sessionsWritten + " sessões novas no GameActivity."
                     };
                 }
 
@@ -413,7 +413,7 @@ namespace BibliotecaRA
                               " jogos com última vez jogado no RA; " +
                               counts.LastActivity + " mudanças de atividade, " +
                               counts.Playtime + " tempos atualizados e " +
-                              sessionsWritten + " sessões no GameActivity."
+                              sessionsWritten + " sessões novas no GameActivity."
                 };
             }
             finally
@@ -545,8 +545,9 @@ namespace BibliotecaRA
                     continue;
                 }
 
-                // Data da sessao = ultima vez jogado no RA (ou a data da consulta,
-                // se o jogo nao aparecer na lista de recentes).
+                // Data da sessao incremental = ultima vez jogado no RA (ou a data da
+                // consulta, se o jogo nao aparecer na lista de recentes). O que entra de
+                // tempo e o delta contra o que ja esta gravado — calculado no writer.
                 var date = DateTime.UtcNow;
                 if (lastPlayed != null && lastPlayed.Games.TryGetValue(game.GameId, out var lastPlayedUtc))
                 {
@@ -560,7 +561,7 @@ namespace BibliotecaRA
                 sessions.Add(new PendingSession
                 {
                     GameId = game.Id,
-                    Seconds = entry.Seconds,
+                    TotalSeconds = entry.Seconds,
                     Date = date
                 });
             }
